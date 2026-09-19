@@ -1,0 +1,107 @@
+# ==========================================================================
+#  Flubbi - git ignore
+#  NOTE: this file only stops NEW files from being committed. Anything that
+#  is already tracked stays tracked until it is removed with
+#  `git rm -r --cached <path>`.
+# ==========================================================================
+
+# ---------------------------------------------------------------- secrets
+.env
+.env.*
+!.env.example
+auth.json
+*.pem
+*.key
+/storage/*.key
+/storage/oauth-*.key
+
+# ------------------------------------------------------- database dumps
+# Full exports contain live customer data (name, phone, email, PAN,
+# Aadhaar, addresses) - never commit them.
+*.sql
+*.sql.gz
+*.sql.zip
+*.dump
+*.mwb.bak
+
+# --------------------------------------------- customer uploads / media
+# KYC documents: Aadhaar, PAN, selfies, bank statements, salary slips.
+/public/uploads/
+/public/storage
+/storage/app/public/*
+!/storage/app/public/.gitignore
+
+# -------------------------------------------------------- dependencies
+/vendor/
+/node_modules/
+/public/build
+/public/hot
+
+# --------------------------------------------------- server debug files
+# phpinfo() and scratch scripts leak server paths, versions and config.
+/info.php
+/default.php
+/public/info.php
+/public/phpinfo.php
+/public/test.php
+
+# ------------------------------------------------ archives and backups
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+*.bak
+*.old
+*.orig
+*~
+*_backup*
+*-backup*
+
+# Hand-made editor duplicates: "homeIndex.blade copy.php", "index.blade2.php"
+* copy.*
+*\ copy.*
+*[Cc]opy.js
+*.blade\ copy.php
+*.blade2.php
+
+# -------------------------------------------------------- laravel cache
+/bootstrap/cache/*.php
+/storage/logs/*.log
+/storage/debugbar
+/storage/pail
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*.php
+/.phpunit.cache
+.phpunit.result.cache
+/.phpactor.json
+
+# ------------------------------------------------------------- tooling
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+/.vite
+.eslintcache
+
+# ------------------------------------------------------------- editors
+/.idea
+/.vscode
+/.fleet
+/.nova
+/.zed
+/.claude
+*.sublime-project
+*.sublime-workspace
+
+# ----------------------------------------------------------- operating
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
