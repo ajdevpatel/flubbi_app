@@ -1,0 +1,275 @@
+.form-group {
+    text-align: left;
+}
+
+section.hero.reviews-details .col-12.col-lg-6.col-xxl-5.mx-auto.mx-lg-0 {
+    z-index: 9;
+}
+
+/* eligibility radio style start */
+.radio-inputs {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    border-radius: 0.5rem;
+    background-color: #d4dfda;
+    box-sizing: border-box;
+    box-shadow: 0 0 0px 1px #d2deda7a;
+    padding: 0.25rem;
+    width: 300px;
+    font-size: 14px;
+}
+
+.radio-inputs .radio {
+    flex: 1 1 auto;
+    text-align: center;
+}
+
+.radio-inputs .radio input {
+    display: none;
+}
+
+.radio-inputs .radio .name {
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    border: none;
+    padding: .5rem 0;
+    color: rgb(7 76 62);
+    transition: all .15s ease-in-out;
+}
+
+.radio-inputs .radio input:checked+.name {
+    background-color: #fff;
+    font-weight: 600;
+}
+
+/* eligibility radio style end */
+
+
+/* preapproval radio style start */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    padding: 1em;
+    margin-bottom: 0.2em;
+    background-color: #fff;
+    border: 1px solid #fdf7ed;
+    border-radius: 25px;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.radio-label:hover {
+    background-color: #e6e6e6;
+}
+
+.radio-input {
+    position: absolute;
+    opacity: 0;
+}
+
+.radio-input:checked+.radio-label {
+    background-color: #ffd9a1;
+    border-color: #155649;
+}
+
+.radio-input:focus+.radio-label {
+    outline: 2px solid #155649;
+}
+
+.radio-inner-circle {
+    display: inline-block;
+    width: 1.5em;
+    height: 1.5em;
+    border: 2px solid #888;
+    border-radius: 50%;
+    margin-right: 0.5em;
+    transition: border-color 0.2s;
+    position: relative;
+}
+
+.radio-label:hover .radio-inner-circle {
+    border-color: #555;
+}
+
+.radio-input:checked+.radio-label .radio-inner-circle {
+    border-color: #155649;
+}
+
+.radio-input:checked+.radio-label .radio-inner-circle::after {
+    content: '';
+    display: block;
+    width: 0.5em;
+    height: 0.5em;
+    background-color: #155649;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* preapproval radio style end */
+
+
+/* Subscription page css start */
+.btn-group {
+    gap: 20px !important;
+}
+
+/* Subscription page css end */
+
+
+/* CMS page */
+.section__content> :is(h1, h2, h3, h4, h5, h6, p, ol, ul),
+.section__content> :is(ol, ul)>li {
+    line-height: 1.7;
+}
+
+.section__content>ol {
+    list-style-type: decimal;
+    margin-left: 20px;
+    padding-left: 20px;
+}
+
+.section__content>ul {
+    list-style-type: disc;
+    /* Use 'circle', 'square', etc., as alternatives */
+    margin-left: 20px;
+    padding-left: 20px;
+}
+
+.section__content> :is(ol, ul)>li {
+    margin-bottom: 10px;
+}
+
+/* CMS page */
+
+
+
+#_offerLeadModule .amount-item-form {
+    position: relative;
+}
+
+.section__content> :is(h1, h2, h3, h4, h5, h6, p, ol, ul),
+.section__content> :is(ol, ul)>li {
+    line-height: 1.1;
+}
+
+section {
+    padding: 4rem 0 !important;
+}
+
+.reviews-details .reviews-details__area p {
+    line-height: 1.4;
+    margin-bottom: 10px;
+}
+
+.reviews-details .reviews-details__area strong {
+    margin-bottom: 10px;
+    display: block;
+    margin-top: 5px;
+}
+
+#_chatEnquiry .form-group {
+    position: relative;
+}
+
+#_chatEnquiry .form-group>label {
+    z-index: 9;
+}
+
+.contactus-form .input-group {
+    display: block;
+}
+
+.contactus-form .input-group .input-single {
+    width: 100%;
+}
+
+@media (max-width: 767px) {
+    .section {
+        padding: 80px 0px !important;
+    }
+}
+
+@media (max-width: 767px) {
+
+    .hero,
+    section.banner {
+        padding-top: 6rem !important;
+    }
+
+    .countdown .countdown__area .countdown__part {
+        width: 46%;
+    }
+
+    .download-app ul.section__content-list {
+        row-gap: 0rem;
+    }
+
+    section.feature.feature--tertiary.section,
+    section.testimonials.section {
+        padding: 2rem;
+    }
+
+    section {
+        padding: 2rem 0 !important;
+    }
+
+    .dev-font .fw-semibold,
+    .dev-font h1 * {
+        font-size: 1rem !important;
+
+    }
+
+}
+
+.dev-font .hero-content5 {
+    margin-top: 2rem;
+}
+
+.anyloan-wrapper .home-loan-items img {
+    width: auto;
+    height: auto;
+    -o-object-fit: contain;
+    object-fit: contain;
+    margin: 0;
+    padding: 0;
+}
+
+input[type="checkbox"][name="i_agree"] {
+    border: 1px solid #074c3e !important;
+    height: 1.3rem !important;
+    width: 1.3rem !important;
+    border-radius: 0.2rem !important;
+    padding: 0;
+    margin: 0;
+}
+
+input[type="checkbox"][name="i_agree"]::before {
+    font-size: 1.5rem !important;
+    padding-top: 0.3rem !important;
+}
+
+@media (max-width: 575px) {
+    .dev-font h1.mb-lg-12.mb-3.text-white {
+        font-size: 1.2rem;
+        margin-top: 1.3rem;
+    }
+
+    .dev-font .hero-content5 {
+        margin-top: 1rem;
+    }
+
+    .dev-font .container {
+        padding-bottom: 1rem;
+    }
+}

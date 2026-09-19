@@ -1,0 +1,78 @@
+/******* toast CSS *********/
+#toast-container>div {
+    padding: 10px 33px 10px 40px !important;
+    opacity: 1;
+}
+
+#toast-container>.toast.rtl {
+    background-position: 0.5rem;
+}
+
+.toast.toast-success.rtl {
+    border: 1px solid #2ec973;
+}
+
+.toast.toast-success.rtl {
+    border: 1px solid #2ec973;
+}
+
+.toast.toast-info.rtl {
+    border: 1px solid #00cfe8;
+}
+
+.toast.toast-warning.rtl {
+    border: 1px solid #ff9f43;
+}
+
+.toast.toast-error.rtl {
+    border: 1px solid #ea5455;
+}
+
+/****** End toast CSS *******/
+
+
+/******* Loader CSS *********/
+.loader-main-inner {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    /* background: #fff; */
+}
+
+.loader-bac {
+    width: 100%;
+    height: 100%;
+    background: rgb(0 0 0 / 0.6);
+}
+
+.u-loader {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.u-loader img {
+    flex-shrink: 0;
+    vertical-align: middle;
+    border-style: none;
+}
+
+/******* End Loader CSS *********/
+
+#addNewPopupModal {
+    width: 37rem !important;
+}
+
+.textarea-view {
+    white-space: pre-wrap;
+}
+
+.multi-fields label.error {
+    width: 100%;
+}
+
+.ck.ck-balloon-panel.ck-balloon-panel_position_border-side_right.ck-balloon-panel_visible.ck-powered-by-balloon {
+    display: none !important;
+}

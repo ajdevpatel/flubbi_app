@@ -1,0 +1,226 @@
+/* emi calculator start*/
+
+/*-------------- slider styling ----------------*/
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+input[type="number"] {
+    width: 80px;
+    padding: 4px 5px;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 7px;
+    background: #c8c8c8;
+    border-radius: 5px;
+    background-image: linear-gradient(#fdb958, #fdb958);
+    background-repeat: no-repeat;
+    margin: 25px 0px 20px 0;
+    cursor: pointer;
+}
+
+/* Input Thumb */
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 25px;
+    width: 25px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 4px solid #fdb958;
+    cursor: pointer;
+    box-shadow: 0 0 2px 0 #555;
+    transition: all 0.3s ease-in-out;
+}
+
+input[type="range"]::-moz-range-thumb {
+    -webkit-appearance: none;
+    height: 30px;
+    width: 30px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 4px solid #fdb958;
+    cursor: pointer;
+    box-shadow: 0 0 2px 0 #555;
+    transition: all 0.3s ease-in-out;
+}
+
+input[type="range"]::-ms-thumb {
+    -webkit-appearance: none;
+    height: 30px;
+    width: 30px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 4px solid #fdb958;
+    cursor: pointer;
+    box-shadow: 0 0 2px 0 #555;
+    transition: all 0.3s ease-in-out;
+}
+
+/* input[type="range"]::-webkit-slider-thumb:hover {
+    background: #ff0200;
+    }*/
+
+input[type="range"]::-moz-range-thumb:hover {
+    background: #ff0200;
+}
+
+input[type="range"]::-ms-thumb:hover {
+    background: #ff0200;
+}
+
+/* Input Track */
+input[type="range"]::-webkit-slider-runnable-track {
+    -webkit-appearance: none;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+}
+
+input[type="range"]::-moz-range-track {
+    -webkit-appearance: none;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+}
+
+input[type="range"]::-ms-track {
+    -webkit-appearance: none;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+}
+
+/*-------------- slider styling ----------------*/
+/* custom slider styling */
+.calculator h2 {
+    margin-bottom: 0;
+}
+
+.calulator-wrapper span {
+    font-size: 16px;
+    color: #6b6b6b;
+    font-weight: 300;
+}
+
+.calulator-wrapper #loanAmountRange {
+    background-size: 10% 100%;
+}
+
+.calulator-wrapper #interestRange {
+    background-size: 20% 100%;
+}
+
+.calulator-wrapper #tenureRange {
+    background-size: 16.6% 100%;
+}
+
+.calulator-wrapper input[type="number"] {
+    background-color: #fff;
+    border-radius: 5px;
+    width: 140px;
+    border: 1px solid #464646;
+    font-size: 17px;
+    font-weight: 400;
+    color: #111;
+    text-align: end;
+    padding: 6px 6px;
+}
+
+.calulator-wrapper .range-number p {
+    margin-right: 5px;
+}
+
+/* custom slider styling */
+/* pie chart styling */
+.piechart canvas {
+    background-color: #ffe9e7;
+}
+
+.piechart {
+    background-color: #ffe9e7;
+    padding: 20px 0 60px 0;
+    border-radius: 20px;
+}
+
+/* details section */
+.details-wrapper {
+    margin: 50px 0;
+}
+
+.details {
+    background-color: #074c3e;
+    padding: 30px 30px;
+    border-radius: 25px;
+}
+
+.details p {
+    color: #fff;
+    margin: 15px 0 10px 0;
+    font-size: 16px;
+    font-weight: 400;
+}
+
+.details img {
+    height: 40px;
+    width: auto;
+}
+
+.details bold {
+    color: #fff;
+    font-weight: 600;
+    font-size: 22px;
+    line-height: 1.2;
+}
+
+/* table styling */
+.details-table thead {
+    background-color: #074c3e;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 400;
+}
+
+.details-table thead th {
+    padding: 20px 15px;
+}
+
+.details-table table {
+    border-radius: 15px;
+    border-collapse: collapse;
+    overflow: hidden;
+}
+
+.details-table tbody td {
+    padding: 18px 15px;
+    font-size: 16px;
+    font-weight: 400;
+    color: #494949;
+}
+
+.details-table tbody {
+    background-color: #fff;
+}
+
+.details-table tbody tr {
+    border-bottom: 1px solid #e6e6e6;
+}
+
+#showMoreBtn {
+    background-color: #074c3e;
+    border-color: #074c3e;
+}
+
+/* emi calculator end*/
