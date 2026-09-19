@@ -185,7 +185,7 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
                 Route::get("/start", "startIndex")->defaults("type", $service_type)->name($n("Start"));
 
                 Route::any("/verify", "stepVerifyIndex")->defaults("type", $service_type)->name($n("Verify"));
-                Route::any("/otp", "stepOtpIndex")->defaults("type", $service_type)->name($n("Otp"));
+                Route::post("/send-otp", "sendOtpIndex")->defaults("type", $service_type)->name($n("SendOtp"));
                 Route::any("/profile", "stepProfileIndex")->defaults("type", $service_type)->name($n("Profile"));
                 Route::any("/employment", "stepEmploymentIndex")->defaults("type", $service_type)->name($n("Employment"));
                 Route::any("/eligibility", "stepEligibilityIndex")->defaults("type", $service_type)->name($n("Eligibility"));

@@ -6,7 +6,7 @@
 @endsection
 
 @section('bodyIndex')
-    <div class="breadcumb-area d-flex">
+    <div class="breadcumb-area fl-breadcumb d-flex">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-12 text-center">

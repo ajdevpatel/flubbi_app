@@ -131,8 +131,23 @@
                 if (xhr.message) {
                     inlineMsg(xhr.message, false);
                 }
+
+                // server-driven UI changes: reveal the OTP box, lock the number, etc.
+                if (xhr.show) {
+                    $(xhr.show).prop("hidden", false);
+                }
+                if (xhr.hide) {
+                    $(xhr.hide).prop("hidden", true);
+                }
+                if (xhr.readonly) {
+                    $(xhr.readonly).prop("readonly", true);
+                }
+                if (xhr.focus) {
+                    $(xhr.focus).trigger("focus");
+                }
                 if (xhr.cooldown) {
-                    startCooldown($btn, parseInt(xhr.cooldown, 10));
+                    var $target = xhr.cooldown_target ? $(xhr.cooldown_target) : $btn;
+                    startCooldown($target.length ? $target : $btn, parseInt(xhr.cooldown, 10));
                 }
                 if (xhr.step) {
                     window.location.href = xhr.step;

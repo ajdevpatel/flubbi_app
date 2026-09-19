@@ -17,10 +17,6 @@
                         <!-- slider button -->
                         <div class="slider_button d-flex gap-3">
                             <div class="hero_btn style_two">
-                                <a href="{{ config('web.store_data.app_link') }}">Download App <i
-                                        class="bi bi-arrow-right"></i><span></span></a>
-                            </div>
-                            <div class="hero_btn style_two">
                                 <a href="{{ route('_accountDeleteIndex') }}" style="background-color: #dc3545;">Delete
                                     Account <i class="bi bi-trash"></i><span></span></a>
                             </div>
@@ -124,12 +120,6 @@
                         </div>
                     </div>
 
-                    <div class="about_button style_upper">
-                        <div class="about_btn style_two style_three">
-                            <a href="{{ config('web.store_data.app_link') }}">Download App <i
-                                    class="bi bi-arrow-right"></i><span></span></a>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

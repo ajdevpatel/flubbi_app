@@ -743,3 +743,782 @@
     border: 1px solid rgba(217, 72, 72, 0.35);
     color: var(--fl-err);
 }
+
+/* ==========================================================================
+   Step screens (Cashvizta layout: info left, form card right)
+   ========================================================================== */
+
+.fl-row {
+    align-items: flex-start;
+}
+
+.fl-info {
+    padding: 10px 26px 0 0;
+}
+
+@media (max-width: 991px) {
+    .fl-info {
+        padding: 30px 0 0;
+    }
+}
+
+.fl-info__title {
+    font-size: 30px;
+    line-height: 1.3;
+    font-weight: 700;
+    color: var(--fl-ink);
+    margin: 14px 0 10px;
+}
+
+.fl-info__title span {
+    color: var(--fl-accent-dark);
+}
+
+.fl-info__sub {
+    font-size: 14px;
+    color: var(--fl-muted);
+    margin-bottom: 22px;
+}
+
+.fl-info .fl-ticks {
+    margin-bottom: 24px;
+}
+
+.fl-info .fl-summary {
+    margin-bottom: 24px;
+}
+
+.fl-info__partners h6 {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--fl-muted);
+    margin-bottom: 12px;
+}
+
+.fl-partners--compact {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.fl-partners--compact img {
+    height: 40px;
+    background: #fff;
+    border: 1px solid var(--fl-line);
+    border-radius: 8px;
+    padding: 6px 8px;
+}
+
+@media (max-width: 991px) {
+    .fl-info__title {
+        font-size: 24px;
+    }
+}
+
+.fl-card .fl-progress {
+    margin-bottom: 26px;
+    padding-bottom: 22px;
+    border-bottom: 1px dashed var(--fl-line);
+}
+
+.fl-link {
+    color: var(--fl-accent-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    white-space: nowrap;
+}
+
+.fl-btn--grow {
+    flex: 1 1 auto;
+}
+
+.fl-preview-tag {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    color: var(--fl-muted);
+}
+
+/* ---------- otp ------------------------------------------------------- */
+
+.fl-otp {
+    text-align: center;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 12px;
+    height: 62px;
+}
+
+.fl-otp::placeholder {
+    letter-spacing: 8px;
+    font-size: 20px;
+}
+
+.fl-otp-wrap {
+    border-top: 1px dashed var(--fl-line);
+    padding-top: 22px;
+    margin-top: 4px;
+}
+
+.fl-resend {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--fl-muted);
+}
+
+.fl-resend .fl-btn--link {
+    margin-left: 4px;
+}
+
+/* ---------- loan amount slider ------------------------------------------ */
+
+.fl-amount {
+    background: var(--fl-soft);
+    border: 1px solid var(--fl-line);
+    border-radius: 12px;
+    padding: 18px 18px 14px;
+}
+
+.fl-amount__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.fl-amount__head .fl-field__label {
+    margin-bottom: 0;
+}
+
+.fl-amount__box {
+    width: 170px;
+}
+
+.fl-amount__box .fl-field__control {
+    height: 44px;
+    font-weight: 600;
+    background: #fff;
+}
+
+.fl-amount__box > span {
+    left: 14px;
+}
+
+.fl-amount__box .fl-field__control {
+    padding-left: 34px;
+}
+
+.fl-amount__display {
+    font-size: 32px;
+    line-height: 1.1;
+    font-weight: 700;
+    color: var(--fl-accent-dark);
+    margin: 14px 0 12px;
+}
+
+.fl-range {
+    --fl-range-fill: 0%;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 8px;
+    outline: 0;
+    cursor: pointer;
+    background: linear-gradient(to right, var(--fl-accent) 0%, var(--fl-accent) var(--fl-range-fill),
+        var(--fl-line) var(--fl-range-fill), var(--fl-line) 100%);
+}
+
+.fl-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--fl-accent);
+    box-shadow: 0 2px 8px rgba(24, 39, 75, 0.2);
+    cursor: grab;
+}
+
+.fl-range::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--fl-accent);
+    box-shadow: 0 2px 8px rgba(24, 39, 75, 0.2);
+    cursor: grab;
+}
+
+.fl-range:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 5px rgba(205, 182, 118, 0.25);
+}
+
+.fl-range__scale {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fl-muted);
+}
+
+@media (max-width: 575px) {
+    .fl-amount__box {
+        width: 100%;
+    }
+    .fl-amount__display {
+        font-size: 28px;
+    }
+}
+
+/* ---------- choice icon ------------------------------------------------ */
+
+.fl-choice__icon {
+    display: block;
+    font-size: 26px;
+    color: var(--fl-accent-dark);
+    margin-bottom: 8px;
+}
+
+/* ---------- offer ------------------------------------------------------ */
+
+.fl-offer {
+    text-align: center;
+    background: linear-gradient(160deg, var(--fl-ink), #16264a);
+    color: #fff;
+    border-radius: 12px;
+    padding: 26px 20px 22px;
+    margin-bottom: 26px;
+}
+
+.fl-offer__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #d9ecb7;
+    background: rgba(30, 158, 106, 0.25);
+    border-radius: 40px;
+    padding: 6px 14px;
+    margin-bottom: 12px;
+}
+
+.fl-offer__amount {
+    font-size: 42px;
+    line-height: 1.1;
+    font-weight: 700;
+    color: var(--fl-accent);
+}
+
+.fl-offer__meta {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    margin-top: 12px;
+    font-size: 13.5px;
+    color: #c5cede;
+}
+
+.fl-offer__meta strong {
+    color: #fff;
+}
+
+@media (max-width: 575px) {
+    .fl-offer__amount {
+        font-size: 34px;
+    }
+}
+
+.fl-tenures {
+    margin-bottom: 8px;
+}
+
+.fl-tenure {
+    display: block;
+    cursor: pointer;
+    margin-bottom: 14px;
+}
+
+.fl-tenure input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.fl-tenure__box {
+    display: block;
+    text-align: center;
+    border: 2px solid var(--fl-line);
+    border-radius: 12px;
+    padding: 14px 8px;
+    transition: 0.2s;
+}
+
+.fl-tenure__months {
+    display: block;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--fl-ink);
+}
+
+.fl-tenure__months small,
+.fl-tenure__emi small {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--fl-muted);
+}
+
+.fl-tenure__emi {
+    display: block;
+    margin-top: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fl-accent-dark);
+}
+
+.fl-tenure:hover .fl-tenure__box {
+    border-color: rgba(205, 182, 118, 0.7);
+}
+
+.fl-tenure input:checked + .fl-tenure__box {
+    border-color: var(--fl-accent);
+    background: rgba(205, 182, 118, 0.1);
+    box-shadow: 0 0 0 3px rgba(205, 182, 118, 0.18);
+}
+
+/* ---------- plan select (self / agent) ---------------------------------- */
+
+.fl-plan--select {
+    display: block;
+    cursor: pointer;
+    padding: 0;
+    border: 0;
+    text-align: left;
+    margin-bottom: 16px;
+}
+
+.fl-plan--select input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.fl-plan__inner {
+    display: block;
+    position: relative;
+    height: 100%;
+    border: 2px solid var(--fl-line);
+    border-radius: var(--fl-radius);
+    padding: 24px 22px 20px 22px;
+    transition: 0.2s;
+}
+
+.fl-plan__inner .fl-choice__tick {
+    left: auto;
+    right: 18px;
+    top: 18px;
+}
+
+.fl-plan--select input:checked + .fl-plan__inner {
+    border-color: var(--fl-accent);
+    background: rgba(205, 182, 118, 0.07);
+}
+
+.fl-plan--select input:checked + .fl-plan__inner .fl-choice__tick {
+    border-color: var(--fl-accent);
+}
+
+.fl-plan--select input:checked + .fl-plan__inner .fl-choice__tick::after {
+    transform: scale(1);
+}
+
+.fl-plan__flag {
+    position: absolute;
+    top: -12px;
+    left: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--fl-accent-dark);
+    border-radius: 30px;
+    padding: 4px 10px;
+}
+
+.fl-plan__icon {
+    display: block;
+    font-size: 28px;
+    color: var(--fl-accent-dark);
+    margin-bottom: 10px;
+}
+
+.fl-plan__inner h4 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--fl-ink);
+    margin-bottom: 8px;
+}
+
+.fl-plan__inner .fl-plan__price {
+    font-size: 26px;
+    text-align: left;
+}
+
+.fl-plan__list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 0;
+}
+
+.fl-plan__list li {
+    position: relative;
+    padding-left: 22px;
+    margin-bottom: 8px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--fl-muted);
+}
+
+.fl-plan__list li i {
+    position: absolute;
+    left: 0;
+    top: 1px;
+    color: var(--fl-ok);
+    font-weight: 700;
+}
+
+/* ---------- payment ----------------------------------------------------- */
+
+.fl-fee {
+    border: 1px solid var(--fl-line);
+    border-radius: 12px;
+    padding: 6px 18px 10px;
+    margin-bottom: 22px;
+    background: var(--fl-soft);
+}
+
+.fl-fee__head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--fl-line);
+    margin-bottom: 6px;
+}
+
+.fl-fee__head > i {
+    font-size: 26px;
+    color: var(--fl-accent-dark);
+}
+
+.fl-fee__head > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.fl-fee__head strong {
+    display: block;
+    font-size: 16px;
+    color: var(--fl-ink);
+}
+
+.fl-fee__head span {
+    display: block;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--fl-muted);
+}
+
+.fl-fee__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0;
+    font-size: 14.5px;
+    color: var(--fl-muted);
+}
+
+.fl-fee__row span:last-child {
+    font-weight: 600;
+    color: var(--fl-ink);
+}
+
+.fl-fee__row--total {
+    border-top: 1px dashed var(--fl-line);
+    margin-top: 4px;
+    padding-top: 14px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--fl-ink);
+}
+
+.fl-fee__row--total span:last-child {
+    font-size: 22px;
+    color: var(--fl-accent-dark);
+}
+
+.fl-btn--pay {
+    min-height: 58px;
+    font-size: 17px;
+}
+
+.fl-paybadges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 18px;
+    margin-top: 16px;
+    font-size: 12.5px;
+    color: var(--fl-muted);
+}
+
+.fl-paybadges i {
+    color: var(--fl-ok);
+    margin-right: 4px;
+}
+
+/* ---------- banks ------------------------------------------------------- */
+
+.fl-bank-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+@media (max-width: 767px) {
+    .fl-bank-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 420px) {
+    .fl-bank-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.fl-bank {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 2px solid var(--fl-line);
+    border-radius: 12px;
+    padding: 12px 8px 10px;
+    cursor: pointer;
+    transition: 0.2s;
+    min-width: 0;
+}
+
+.fl-bank:hover,
+.fl-bank:focus {
+    border-color: var(--fl-accent);
+    box-shadow: 0 6px 18px rgba(24, 39, 75, 0.08);
+    outline: 0;
+}
+
+.fl-bank__logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 44px;
+}
+
+.fl-bank__logo img {
+    max-width: 100%;
+    max-height: 44px;
+    object-fit: contain;
+}
+
+.fl-bank__name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fl-ink);
+    text-align: center;
+    line-height: 1.3;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fl-bank-picked__card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border: 2px solid var(--fl-accent);
+    background: rgba(205, 182, 118, 0.08);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+}
+
+.fl-bank-picked__card .fl-bank__logo {
+    width: 84px;
+    height: 48px;
+    flex: 0 0 84px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.fl-bank-picked__card > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.fl-bank-picked__card small {
+    display: block;
+    font-size: 12px;
+    color: var(--fl-muted);
+}
+
+.fl-bank-picked__card strong {
+    font-size: 17px;
+    color: var(--fl-ink);
+}
+
+.fl-bank-picked__card--static {
+    margin-top: 6px;
+}
+
+/* ---------- result ------------------------------------------------------ */
+
+.fl-result {
+    text-align: center;
+    padding: 12px 10px 24px;
+    border-bottom: 1px dashed var(--fl-line);
+    margin-bottom: 22px;
+}
+
+.fl-result i {
+    font-size: 58px;
+    line-height: 1;
+}
+
+.fl-result--ok i {
+    color: var(--fl-ok);
+}
+
+.fl-result--err i {
+    color: var(--fl-err);
+}
+
+.fl-result h3 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--fl-ink);
+    margin: 14px 0 8px;
+}
+
+.fl-result p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--fl-muted);
+    margin: 0;
+}
+
+.fl-next h5 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--fl-ink);
+    margin-bottom: 10px;
+}
+
+.fl-next ol {
+    padding-left: 20px;
+    margin: 0 0 18px;
+}
+
+.fl-next li {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--fl-muted);
+    margin-bottom: 6px;
+}
+
+/* ---------- compact banner for step screens ------------------------------
+   The theme hero (.breadcumb-area) is ~580px tall; on a phone the form only
+   starts below the fold. Steps get a slim navy band with a gold rule instead. */
+
+.breadcumb-area.fl-breadcumb {
+    background: linear-gradient(115deg, rgba(9, 22, 47, 0.94), rgba(9, 22, 47, 0.8)),
+        url(../images/inner-img/breadcrumb_bg.png) center / cover no-repeat;
+    padding: 52px 0 46px;
+    border-bottom: 3px solid var(--fl-accent);
+}
+
+.breadcumb-area.fl-breadcumb::before {
+    display: none;
+}
+
+.fl-breadcumb .breadcumb-title h4 {
+    font-size: 30px;
+    line-height: 1.25;
+    padding-bottom: 6px;
+    margin: 0;
+}
+
+.fl-breadcumb .breadcumb-title h4::before {
+    display: none;
+}
+
+.fl-breadcumb .breadcumb-content ul {
+    margin: 4px 0 0;
+    padding: 0;
+}
+
+.fl-breadcumb .breadcumb-content ul li,
+.fl-breadcumb .breadcumb-content ul li a {
+    font-size: 14px;
+    font-weight: 500;
+    color: #d5dbe6;
+}
+
+.fl-breadcumb .breadcumb-content ul li a:hover {
+    color: var(--fl-accent);
+}
+
+.fl-breadcumb .breadcumb-content ul li:last-child {
+    color: var(--fl-accent);
+}
+
+.fl-breadcumb + .fl-service {
+    padding-top: 44px;
+}
+
+.fl-breadcumb + .fl-hero {
+    padding-top: 56px;
+}
+
+@media (max-width: 767px) {
+    .breadcumb-area.fl-breadcumb {
+        padding: 26px 0 22px;
+    }
+    .fl-breadcumb + .fl-hero {
+        padding-top: 30px;
+    }
+    .fl-breadcumb .breadcumb-title h4 {
+        font-size: 22px;
+        padding-bottom: 2px;
+    }
+    .fl-breadcumb .breadcumb-content ul li,
+    .fl-breadcumb .breadcumb-content ul li a {
+        font-size: 12.5px;
+    }
+    .fl-breadcumb + .fl-service {
+        padding-top: 22px;
+    }
+}

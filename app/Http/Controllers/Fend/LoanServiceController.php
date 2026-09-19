@@ -21,6 +21,15 @@ use Illuminate\Support\Facades\DB;
  */
 class LoanServiceController extends Controller
 {
+    /**
+     * DESIGN PREVIEW MODE
+     * While true every step renders its real design, the step guard is off and
+     * a POST simply answers with the next step URL without validating or saving
+     * anything - so the whole flow can be clicked through on phone + desktop.
+     * Flip to false once the step logic is wired in.
+     */
+    public const DESIGN_PREVIEW = true;
+
     /*
     |--------------------------------------------------------------------------
     | Service + step definitions
@@ -33,6 +42,7 @@ class LoanServiceController extends Controller
             "loan_type_id" => 1,
             "label" => "Personal Loan",
             "short" => "PL",
+            "default_purpose_id" => 1,
             "tagline" => "Funds for a medical emergency, wedding, travel, education or any personal need.",
         ],
         "business" => [
@@ -40,23 +50,23 @@ class LoanServiceController extends Controller
             "loan_type_id" => 2,
             "label" => "Business Loan",
             "short" => "BL",
+            "default_purpose_id" => 4,
             "tagline" => "Working capital, stock purchase, machinery or expansion funding for your business.",
         ],
     ];
 
     /** Flow order. "no" drives the progress bar, so verify + otp share step 1. */
     public const STEPS = [
-        "verify"      => ["no" => 1, "label" => "Mobile",     "title" => "Start with your mobile number"],
-        "otp"         => ["no" => 1, "label" => "Mobile",     "title" => "Verify the OTP"],
-        "profile"     => ["no" => 2, "label" => "Details",    "title" => "A few basic details"],
-        "employment"  => ["no" => 3, "label" => "Employment", "title" => "What describes you best?"],
-        "eligibility" => ["no" => 4, "label" => "Income",     "title" => "Income and credit details"],
-        "offer"       => ["no" => 5, "label" => "Offer",      "title" => "Your pre-approved offer"],
-        "login-type"  => ["no" => 6, "label" => "Process",    "title" => "How would you like to proceed?"],
-        "payment"     => ["no" => 7, "label" => "Payment",    "title" => "Platform fee payment"],
-        "banks"       => ["no" => 7, "label" => "Payment",    "title" => "Select your lending partner"],
-        "success"     => ["no" => 7, "label" => "Payment",    "title" => "Application submitted"],
-        "failed"      => ["no" => 7, "label" => "Payment",    "title" => "Payment could not be completed"],
+        "verify"      => ["no" => 1, "label" => "Mobile",     "title" => "Start with your mobile number",   "next" => "profile"],
+        "profile"     => ["no" => 2, "label" => "Details",    "title" => "A few basic details",             "next" => "employment"],
+        "employment"  => ["no" => 3, "label" => "Employment", "title" => "What describes you best?",        "next" => "eligibility"],
+        "eligibility" => ["no" => 4, "label" => "Income",     "title" => "Income and credit details",       "next" => "offer"],
+        "offer"       => ["no" => 5, "label" => "Offer",      "title" => "Your pre-approved offer",         "next" => "login-type"],
+        "login-type"  => ["no" => 6, "label" => "Process",    "title" => "How would you like to proceed?",  "next" => "payment"],
+        "payment"     => ["no" => 7, "label" => "Payment",    "title" => "Platform fee payment",            "next" => "banks"],
+        "banks"       => ["no" => 7, "label" => "Payment",    "title" => "Select your lending partner",     "next" => "success"],
+        "success"     => ["no" => 7, "label" => "Payment",    "title" => "Application submitted",           "next" => null],
+        "failed"      => ["no" => 7, "label" => "Payment",    "title" => "Payment could not be completed",  "next" => "payment"],
     ];
 
     public const TOTAL_STEPS = 7;
@@ -67,17 +77,21 @@ class LoanServiceController extends Controller
     /** step slug => route-name suffix */
     public const ROUTE_SUFFIX = [
         "verify" => "Verify",
-        "otp" => "Otp",
+        "send-otp" => "SendOtp",
         "profile" => "Profile",
         "employment" => "Employment",
         "eligibility" => "Eligibility",
         "offer" => "Offer",
         "login-type" => "LoginType",
         "payment" => "Payment",
+        "payment-verify" => "PaymentVerify",
         "banks" => "Banks",
         "success" => "Success",
         "failed" => "Failed",
     ];
+
+    /** Tenures offered on the pre-approved screen (months) - same list the app uses. */
+    public const TENURES = [12, 24, 36, 48, 60, 72];
 
     public const SESSION_KEY = "fl_service";
 
@@ -198,10 +212,10 @@ class LoanServiceController extends Controller
     {
         $user = $this->sessionUser();
         if (!$user) {
-            return session()->has(self::SESSION_KEY . ".otp.phone") ? "otp" : "verify";
+            return "verify";
         }
 
-        if (empty($user->email) || empty($user->state_id) || empty($user->city_id) || empty($user->pincode)) {
+        if (empty($user->email) || empty($user->pincode) || empty($user->city) || empty($user->state_id)) {
             return "profile";
         }
 
@@ -232,6 +246,10 @@ class LoanServiceController extends Controller
      */
     public function guardStep(Request $request, string $current)
     {
+        if (self::DESIGN_PREVIEW) {
+            return null;
+        }
+
         $type = $this->service($request)["type"];
         $allowed = $this->resolveStep($type);
 
@@ -243,8 +261,8 @@ class LoanServiceController extends Controller
         $current_no = array_search($current, $order, true);
         $allowed_no = array_search($allowed, $order, true);
 
-        // Already identified - never send them back to the OTP screens.
-        if (0 < $this->sessionUserId() && in_array($current, ["verify", "otp"], true)) {
+        // Already identified - never send them back to the OTP screen.
+        if (0 < $this->sessionUserId() && "verify" === $current) {
             return redirect()->to($this->stepUrl($type, $allowed));
         }
 
@@ -262,13 +280,26 @@ class LoanServiceController extends Controller
     public function stepView(Request $request, string $step, array $data = [])
     {
         $service = $this->service($request);
+        $type = $service["type"];
 
         $request->merge([
             "header_class" => 1,
         ]);
 
-        $view = $data["view"] ?? "stepPendingIndex";
+        $view = $data["view"] ?? ("step" . str_replace(" ", "", ucwords(str_replace("-", " ", $step))) . "Index");
         unset($data["view"]);
+
+        $urls = [];
+        foreach (array_keys(self::ROUTE_SUFFIX) as $slug) {
+            $urls[$slug] = $this->stepUrl($type, $slug);
+        }
+
+        $partners = DB::table("self_login_banks")
+            ->select(["id", "label", "logo"])
+            ->where("status", 1)
+            ->orderBy("label", "asc")
+            ->limit(8)
+            ->get();
 
         return view("frontend.services." . $view, array_merge([
             "service" => $service,
@@ -276,8 +307,11 @@ class LoanServiceController extends Controller
             "step_meta" => self::STEPS[$step],
             "total_steps" => self::TOTAL_STEPS,
             "steps" => self::STEPS,
+            "urls" => $urls,
+            "partners" => $partners,
             "session_user" => $this->sessionUser(),
-            "loan" => in_array($step, ["verify", "otp"], true) ? null : $this->currentApplication($service["type"]),
+            "loan" => "verify" === $step ? null : $this->currentApplication($type),
+            "preview" => self::DESIGN_PREVIEW,
         ], $data));
     }
 
@@ -295,6 +329,20 @@ class LoanServiceController extends Controller
         return response()->json([
             "errors" => ["message" => $messages],
         ], 422);
+    }
+
+    /**
+     * Design preview: a POST just walks to the next step. Returns null when the
+     * request should be handled for real (GET, or preview switched off).
+     */
+    private function previewPost(Request $request, string $step)
+    {
+        if (!self::DESIGN_PREVIEW || "POST" !== $request->method()) {
+            return null;
+        }
+        $type = $this->service($request)["type"];
+        $next = self::STEPS[$step]["next"] ?? "verify";
+        return $this->stepResponse($type, $next, "Preview: moving to the next step");
     }
 
     /*
@@ -341,79 +389,293 @@ class LoanServiceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Steps - filled in one phase at a time
+    | Step 1 - mobile number + OTP
     |--------------------------------------------------------------------------
     */
 
+    /**
+     * One screen: name + mobile -> "Send OTP" (side POST, stays on the page and
+     * reveals the OTP box) -> "Verify & continue" (step POST -> profile).
+     * The OTP box state lives in the session, so a refresh keeps it open.
+     */
     public function stepVerifyIndex(Request $request)
     {
-        return $this->pendingStep($request, "verify");
+        if ($r = $this->previewPost($request, "verify")) {
+            return $r;
+        }
+        if ($r = $this->guardStep($request, "verify")) {
+            return $r;
+        }
+
+        $type = $this->service($request)["type"];
+
+        if ($request->boolean("change")) {
+            session()->forget(self::SESSION_KEY . ".otp");
+            return redirect()->to($this->stepUrl($type, "verify"));
+        }
+
+        $otp = session(self::SESSION_KEY . ".otp", []);
+
+        return $this->stepView($request, "verify", [
+            "otp_sent" => !empty($otp["phone"]),
+            "name" => $otp["name"] ?? "",
+            "phone" => $otp["phone"] ?? "",
+            "cooldown" => 60,
+        ]);
     }
 
-    public function stepOtpIndex(Request $request)
+    /** Side POST from the verify screen - sends the OTP and reveals the OTP box. */
+    public function sendOtpIndex(Request $request)
     {
-        return $this->pendingStep($request, "otp");
+        if (self::DESIGN_PREVIEW) {
+            session()->put(self::SESSION_KEY . ".otp", [
+                "name" => (string) $request->input("name", ""),
+                "phone" => (string) $request->input("phone", ""),
+                "sent_at" => now()->toDateTimeString(),
+            ]);
+
+            return response()->json([
+                "message" => "Preview: OTP sent (nothing is really sent yet)",
+                "otp_sent" => true,
+                "cooldown" => 60,
+                "cooldown_target" => "#fl-resend-btn",
+                "show" => "#fl-otp-wrap",
+                "hide" => "#fl-send-wrap",
+                "readonly" => "#name, #phone",
+                "focus" => "#otp",
+            ], 200);
+        }
+
+        return $this->stepError(["OTP sending is not available yet."]);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Step 2 - email, pincode, state, city
+    |--------------------------------------------------------------------------
+    */
 
     public function stepProfileIndex(Request $request)
     {
-        return $this->pendingStep($request, "profile");
+        if ($r = $this->previewPost($request, "profile")) {
+            return $r;
+        }
+        if ($r = $this->guardStep($request, "profile")) {
+            return $r;
+        }
+
+        // City is free text (spec order: Email, PIN, City, State). On save it is
+        // matched against districts to fill users.city_id when a name lines up.
+        $states = DB::table("states")
+            ->select(["id", "name"])
+            ->where("status", 0)
+            ->orderBy("name")
+            ->get();
+
+        return $this->stepView($request, "profile", [
+            "states" => $states,
+        ]);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Step 3 - employment type
+    |--------------------------------------------------------------------------
+    */
 
     public function stepEmploymentIndex(Request $request)
     {
-        return $this->pendingStep($request, "employment");
+        if ($r = $this->previewPost($request, "employment")) {
+            return $r;
+        }
+        if ($r = $this->guardStep($request, "employment")) {
+            return $r;
+        }
+
+        return $this->stepView($request, "employment");
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Step 4 - income, cibil, existing emi, amount required
+    |--------------------------------------------------------------------------
+    */
 
     public function stepEligibilityIndex(Request $request)
     {
-        return $this->pendingStep($request, "eligibility");
+        if ($r = $this->previewPost($request, "eligibility")) {
+            return $r;
+        }
+        if ($r = $this->guardStep($request, "eligibility")) {
+            return $r;
+        }
+
+        $cibil_scores = DB::table("cibil_scores")
+            ->select(["id", "label"])
+            ->where("status", 1)
+            ->orderBy("id")
+            ->get();
+
+        return $this->stepView($request, "eligibility", [
+            "cibil_scores" => $cibil_scores,
+        ]);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Step 5 - pre-approved offer + tenure
+    |--------------------------------------------------------------------------
+    */
 
     public function stepOfferIndex(Request $request)
     {
-        return $this->pendingStep($request, "offer");
+        if ($r = $this->previewPost($request, "offer")) {
+            return $r;
+        }
+        if ($r = $this->guardStep($request, "offer")) {
+            return $r;
+        }
+
+        $service = $this->service($request);
+        $loan = $this->currentApplication($service["type"]);
+
+        $loan_type = DB::table("loan_types")->where("id", $service["loan_type_id"])->first();
+        $rate = (float) ($loan->interest_rate ?? $loan_type->rate ?? 12.5);
+
+        // Real values once the eligibility step is wired; sample figures until then.
+        $income = (float) ($loan->monthly_income ?? 50000);
+        $existing_emi = (float) ($loan->existing_emi ?? 0);
+        $requested = (float) ($loan->eligible_amount ?? 500000);
+
+        $eligible = $this->checkUserLoanAmountEligiblity($income, $existing_emi, $rate, $requested);
+        $offer_amount = min($eligible, max($requested, 50000));
+
+        $tenures = [];
+        foreach (self::TENURES as $months) {
+            $tenures[] = [
+                "months" => $months,
+                "emi" => $this->emiCalculation($rate, $months / 12, $offer_amount),
+            ];
+        }
+
+        return $this->stepView($request, "offer", [
+            "rate" => $rate,
+            "eligible_amount" => $eligible,
+            "offer_amount" => $offer_amount,
+            "requested_amount" => $requested,
+            "tenures" => $tenures,
+            "selected_tenure" => (int) ($loan->tenure_months ?? 36),
+        ]);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Step 6 - self login vs hire agent
+    |--------------------------------------------------------------------------
+    */
 
     public function stepLoginTypeIndex(Request $request)
     {
-        return $this->pendingStep($request, "login-type");
+        if ($r = $this->previewPost($request, "login-type")) {
+            return $r;
+        }
+        if ($r = $this->guardStep($request, "login-type")) {
+            return $r;
+        }
+
+        $loan = $this->currentApplication($this->service($request)["type"]);
+
+        return $this->stepView($request, "login-type", [
+            "fee_self" => $this->feeData("self"),
+            "fee_consultant" => $this->feeData("consultant"),
+            "selected" => $loan->login_type ?? "self",
+        ]);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Step 7 - payment, then banks (self) / success (agent)
+    |--------------------------------------------------------------------------
+    */
 
     public function stepPaymentIndex(Request $request)
     {
-        return $this->pendingStep($request, "payment");
+        if ($r = $this->guardStep($request, "payment")) {
+            return $r;
+        }
+
+        $loan = $this->currentApplication($this->service($request)["type"]);
+        $login_type = $loan->login_type ?? "self";
+
+        return $this->stepView($request, "payment", [
+            "fee" => $this->feeData($login_type),
+            "razorpay_key" => env("RAZORPAY_KEY", ""),
+        ]);
     }
 
     public function paymentVerifyIndex(Request $request)
     {
+        if ($r = $this->previewPost($request, "payment")) {
+            return $r;
+        }
+
         return $this->stepError(["Payment is not available yet."]);
     }
 
     public function stepBanksIndex(Request $request)
     {
-        return $this->pendingStep($request, "banks");
+        if ($r = $this->previewPost($request, "banks")) {
+            return $r;
+        }
+        if ($r = $this->guardStep($request, "banks")) {
+            return $r;
+        }
+
+        $service = $this->service($request);
+        $link_col = "business" === $service["type"] ? "bl_link" : "pl_link";
+
+        $banks = DB::table("self_login_banks")
+            ->select(["id", "label", "logo", $link_col . " as link"])
+            ->where("status", 1)
+            ->orderBy("label", "asc")
+            ->get();
+
+        return $this->stepView($request, "banks", [
+            "banks" => $banks,
+        ]);
     }
 
     public function successIndex(Request $request)
     {
-        return $this->pendingStep($request, "success");
+        $service = $this->service($request);
+        $loan = $this->currentApplication($service["type"]);
+
+        $bank = null;
+        if (!empty($loan->self_login_bank_id)) {
+            $bank = DB::table("self_login_banks")->where("id", $loan->self_login_bank_id)->first();
+        }
+        if (!$bank && self::DESIGN_PREVIEW) {
+            $bank = DB::table("self_login_banks")->where("status", 1)->orderBy("label")->first();
+        }
+
+        $link = "";
+        if ($bank) {
+            $link = "business" === $service["type"] ? $bank->bl_link : $bank->pl_link;
+        }
+
+        return $this->stepView($request, "success", [
+            "view" => "successIndex",
+            "login_type" => $loan->login_type ?? "self",
+            "application_no" => $loan->application_no ?? "LN-" . date("Ymd") . "-PREVIEW",
+            "bank" => $bank,
+            "bank_link" => trim($link),
+        ]);
     }
 
     public function failedIndex(Request $request)
     {
-        return $this->pendingStep($request, "failed");
-    }
-
-    /** Scaffold used by steps that have not been implemented yet. */
-    private function pendingStep(Request $request, string $step)
-    {
-        if ("POST" === $request->method()) {
-            return $this->stepError(["This step is not available yet."]);
-        }
-
-        return $this->stepView($request, $step, [
-            "view" => "stepPendingIndex",
+        return $this->stepView($request, "failed", [
+            "view" => "failedIndex",
         ]);
     }
 }

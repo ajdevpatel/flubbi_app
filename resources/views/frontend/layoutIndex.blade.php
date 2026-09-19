@@ -140,8 +140,12 @@
                         <ul class="nav_scroll">
                             <li><a href="{{ route('_homeIndex') }}">Home</a></li>
                             <li><a href="{{ route('_aboutusPost') }}">About</a></li>
-                            <li><a href="{{ route('_personalServiceIndex') }}">Personal Loan</a></li>
-                            <li><a href="{{ route('_businessServiceIndex') }}">Business Loan</a></li>
+                            <li><a href="#">Services <span><i class="fas fa-angle-down"></i></span></a>
+                                <ul class="sub_menu">
+                                    <li><a href="{{ route('_personalServiceIndex') }}">Personal Loan</a></li>
+                                    <li><a href="{{ route('_businessServiceIndex') }}">Business Loan</a></li>
+                                </ul>
+                            </li>
                             <li><a href="{{ route('_contactusPost') }}">Contact</a></li>
                         </ul>
 
@@ -149,9 +153,6 @@
                 </div>
                 <div class="col-lg-3">
                     <div class="consalt_header-right">
-                        <div class="header-button style_two">
-                            <a href="#">Get A App <i class="bi bi-arrow-right"></i></a>
-                        </div>
                         <div class="sidebar-btn">
                             <div class="nav-btn navSidebar-button"><span><i class="bi bi-filter-left"></i></span>
                             </div>
@@ -173,8 +174,12 @@
                 <ul class="nav_scroll">
                     <li><a href="{{ route('_homeIndex') }}">Home</a></li>
                     <li><a href="{{ route('_aboutusPost') }}">About</a></li>
-                    <li><a href="{{ route('_personalServiceIndex') }}">Personal Loan</a></li>
-                    <li><a href="{{ route('_businessServiceIndex') }}">Business Loan</a></li>
+                    <li><a href="#">Services</a>
+                        <ul class="sub_menu">
+                            <li><a href="{{ route('_personalServiceIndex') }}">Personal Loan</a></li>
+                            <li><a href="{{ route('_businessServiceIndex') }}">Business Loan</a></li>
+                        </ul>
+                    </li>
                     <li><a href="{{ route('_contactusPost') }}">Contact</a></li>
                 </ul>
             </nav>
