@@ -1,7 +1,7 @@
 <?php
 
 return [
-    "base_url" => $_ENV["APP_URL"] . "/",
+    "base_url" => rtrim($_ENV["APP_URL"], "/") . "/",
     "env" => [
         "app_name" => $_ENV["APP_NAME"],
         "app_dev_author" => $_ENV["DEV_AUTHOR"],
