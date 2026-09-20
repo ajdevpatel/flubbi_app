@@ -70,9 +70,9 @@
                             </div>
                             <div class="fl-resend">
                                 Did not get the code?
-                                <button type="button" class="fl-btn fl-btn--link" id="fl-resend-btn" data-fl-post="{{ route('_userLoginSendOtp') }}" data-fl-form="#fl-login-form" @if ($otp_sent) data-fl-cooldown="60" @endif>Resend OTP</button>
+                                <button type="button" class="fl-btn fl-btn--link" id="fl-resend-btn" data-fl-post="{{ route('_userLoginSendOtp') }}" data-fl-form="#fl-login-form" @if ($otp_sent && $cooldown) data-fl-cooldown="{{ $cooldown }}" @endif>Resend OTP</button>
                                 &nbsp;&middot;&nbsp;
-                                <a class="fl-link" href="{{ route('_userLogin') }}">Change number</a>
+                                <a class="fl-link" href="{{ route('_userLogin') }}?change=1">Change number</a>
                             </div>
                         </div>
                     </form>

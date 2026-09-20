@@ -18,7 +18,7 @@ return [
         "max_per_hour" => 5,
         "max_attempts" => 5,
 
-        "test_phone" => "8866442200",
+        "test_phone" => env("SMS_TEST_PHONE", "8866442200"),
         "test_otp" => "123456",
     ],
 ];

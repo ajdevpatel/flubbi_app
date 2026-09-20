@@ -801,14 +801,6 @@
     margin-top: 6px;
 }
 
-.up-sample {
-    text-align: center;
-    font-size: 12px;
-    letter-spacing: 0.5px;
-    color: var(--fl-muted);
-    margin-top: 6px;
-}
-
 textarea.fl-field__control {
     height: auto;
     min-height: 120px;

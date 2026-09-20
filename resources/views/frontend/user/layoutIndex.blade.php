@@ -38,9 +38,6 @@
                 <div class="col-lg-9">
                     <div class="fl-inline-msg"></div>
                     @yield('panelBody')
-                    @if ($sample)
-                        <div class="up-sample">Sample data &mdash; log in to see your own account</div>
-                    @endif
                 </div>
             </div>
         </div>

@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Fend;
 
 use App\Http\Controllers\Controller;
+use App\Services\OtpService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class UserPanelController extends Controller
 {
@@ -63,20 +66,31 @@ class UserPanelController extends Controller
             ->first();
     }
 
-    private function panelView(Request $request, string $view, array $data = [])
+    private function requireUser(Request $request): array
+    {
+        $user = $this->sessionUser();
+        if ($user) {
+            return [$user, null];
+        }
+
+        if ("GET" !== $request->method() || $request->ajax()) {
+            return [null, response()->json([
+                "errors" => ["message" => ["Please log in to continue."]],
+                "step" => route("_userLogin"),
+            ], 422)];
+        }
+
+        session()->put(self::SESSION_KEY . ".login_next", $request->fullUrl());
+        return [null, redirect()->route("_userLogin")];
+    }
+
+    private function panelView(Request $request, string $view, $user, array $data = [])
     {
         $request->merge(["header_class" => 1]);
 
-        $user = $this->sessionUser();
-        $sample = null === $user;
-        if ($sample) {
-            $user = $this->sampleUser();
-        }
-
         return view("frontend.user." . $view, array_merge([
             "user" => $user,
-            "sample" => $sample,
-            "unread" => $sample ? 2 : DB::table("notifications")->where("user_id", $user->id)->where("is_read", 0)->count(),
+            "unread" => DB::table("notifications")->where("user_id", $user->id)->where("is_read", 0)->count(),
             "support" => $this->supportData(),
         ], $data));
     }
@@ -90,12 +104,8 @@ class UserPanelController extends Controller
         ];
     }
 
-    private function applications($user, bool $sample)
+    private function applications($user)
     {
-        if ($sample) {
-            return collect($this->sampleApplications());
-        }
-
         return DB::table("loan_applications as la")
             ->leftJoin("loan_types as lt", "lt.id", "=", "la.loan_type_id")
             ->leftJoin("loan_status as ls", "ls.id", "=", "la.status")
@@ -116,23 +126,151 @@ class UserPanelController extends Controller
             ->get();
     }
 
-    public function loginIndex(Request $request)
+    public function loginIndex(Request $request, OtpService $otp_service)
     {
         $request->merge(["header_class" => 1]);
 
         if ("POST" === $request->method()) {
-            return response()->json(["errors" => ["message" => ["Login is not available yet."]]], 422);
+            return $this->loginPost($request, $otp_service);
+        }
+
+        if ($this->sessionUser()) {
+            return redirect()->route("_userDashboard");
+        }
+
+        if ($request->boolean("change")) {
+            session()->forget(self::SESSION_KEY . ".login_otp");
+            return redirect()->route("_userLogin");
+        }
+
+        $otp = session(self::SESSION_KEY . ".login_otp", []);
+        $cooldown = 0;
+        if (!empty($otp["sent_at"])) {
+            $elapsed = (int) Carbon::parse($otp["sent_at"])->diffInSeconds(now());
+            $cooldown = max(0, (int) config("web.sms.otp.cooldown_seconds", 60) - $elapsed);
         }
 
         return view("frontend.user.loginIndex", [
-            "otp_sent" => $request->boolean("otp"),
-            "phone" => $request->boolean("otp") ? "98XXXXXX10" : "",
+            "otp_sent" => !empty($otp["phone"]),
+            "phone" => $otp["phone"] ?? "",
+            "cooldown" => $cooldown,
         ]);
     }
 
-    public function loginSendOtp(Request $request)
+    public function loginSendOtp(Request $request, OtpService $otp_service)
     {
-        return response()->json(["errors" => ["message" => ["Login is not available yet."]]], 422);
+        $validator = Validator::make($request->all(), [
+            "phone" => ["required", "digits:10", "regex:/^[6-9][0-9]{9}$/"],
+        ], [
+            "phone.required" => "Please enter your mobile number.",
+            "phone.digits" => "Mobile number must be exactly 10 digits.",
+            "phone.regex" => "Please enter a valid Indian mobile number.",
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(["errors" => ["message" => [$validator->errors()->first()]]], 422);
+        }
+
+        $phone = (string) $request->input("phone");
+        $user = DB::table("users")->where("phone", $phone)->whereNull("deleted_at")->first();
+
+        if (!$user) {
+            return response()->json([
+                "errors" => ["message" => ["No account found for this mobile number. Check your loan eligibility to create one."]],
+            ], 422);
+        }
+        if (2 == (int) $user->status) {
+            return response()->json(["errors" => ["message" => ["This account is blocked. Please contact support."]]], 422);
+        }
+
+        $sent = $otp_service->issue($phone);
+        if (true !== $sent["status"]) {
+            return response()->json(["errors" => ["message" => [$sent["message"]]]], 422);
+        }
+
+        session()->put(self::SESSION_KEY . ".login_otp", [
+            "phone" => $phone,
+            "sent_at" => now()->toDateTimeString(),
+        ]);
+
+        return response()->json([
+            "message" => $sent["message"],
+            "otp_sent" => true,
+            "cooldown" => $sent["cooldown"] ?? (int) config("web.sms.otp.cooldown_seconds", 60),
+            "cooldown_target" => "#fl-resend-btn",
+            "show" => "#fl-otp-wrap",
+            "hide" => "#fl-send-wrap",
+            "readonly" => "#phone",
+            "focus" => "#otp",
+        ], 200);
+    }
+
+    private function loginPost(Request $request, OtpService $otp_service)
+    {
+        $pending = session(self::SESSION_KEY . ".login_otp", []);
+        $phone = (string) ($pending["phone"] ?? "");
+        if ("" === $phone) {
+            return response()->json(["errors" => ["message" => ["Please request an OTP first."]]], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            "otp" => ["required", "digits:6"],
+        ], [
+            "otp.required" => "Please enter the 6 digit OTP.",
+            "otp.digits" => "OTP must be exactly 6 digits.",
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(["errors" => ["message" => [$validator->errors()->first()]]], 422);
+        }
+
+        $check = $otp_service->verify($phone, (string) $request->input("otp"));
+        if (true !== $check["status"]) {
+            $max_attempts = (int) config("web.sms.otp.max_attempts", 5);
+            $attempts = (int) ($pending["attempts"] ?? 0) + 1;
+
+            if ($attempts >= $max_attempts) {
+                DB::table("otp_logs")->where("phone", $phone)->where("is_used", 0)->update(["is_used" => 1, "updated_at" => now()]);
+                session()->forget(self::SESSION_KEY . ".login_otp");
+
+                return response()->json([
+                    "errors" => ["message" => ["Too many wrong attempts. Please request a new OTP."]],
+                    "step" => route("_userLogin"),
+                ], 422);
+            }
+
+            session()->put(self::SESSION_KEY . ".login_otp.attempts", $attempts);
+            $left = $max_attempts - $attempts;
+
+            return response()->json([
+                "errors" => ["message" => [$check["message"] . " " . $left . " attempt" . (1 == $left ? "" : "s") . " left."]],
+            ], 422);
+        }
+
+        $user = DB::table("users")->where("phone", $phone)->whereNull("deleted_at")->first();
+        if (!$user) {
+            return response()->json(["errors" => ["message" => ["No account found for this mobile number."]]], 422);
+        }
+        if (2 == (int) $user->status) {
+            return response()->json(["errors" => ["message" => ["This account is blocked. Please contact support."]]], 422);
+        }
+
+        DB::table("users")->where("id", $user->id)->update([
+            "mobile_verified_at" => now(),
+            "status" => 0 == (int) $user->status ? 1 : (int) $user->status,
+            "updated_at" => now(),
+        ]);
+
+        $request->session()->regenerate();
+        session()->forget(self::SESSION_KEY . ".login_otp");
+        session()->put(self::SESSION_KEY . ".user_id", (int) $user->id);
+
+        $next = (string) (session()->pull(self::SESSION_KEY . ".login_next") ?: route("_userDashboard"));
+
+        return response()->json([
+            "message" => "Welcome back" . ($user->name ? ", " . $user->name : "") . "!",
+            "step" => $next,
+        ], 200);
     }
 
     public function logoutIndex(Request $request)
@@ -144,11 +282,14 @@ class UserPanelController extends Controller
 
     public function dashboardIndex(Request $request)
     {
-        $user = $this->sessionUser();
-        $sample = null === $user;
-        $apps = $this->applications($user ?? $this->sampleUser(), $sample);
+        [$user, $fail] = $this->requireUser($request);
+        if ($fail) {
+            return $fail;
+        }
 
-        return $this->panelView($request, "dashboardIndex", [
+        $apps = $this->applications($user);
+
+        return $this->panelView($request, "dashboardIndex", $user, [
             "applications" => $apps,
             "latest" => $apps->first(),
             "stats" => [
@@ -157,33 +298,35 @@ class UserPanelController extends Controller
                 "paid" => $apps->where("payment_status", 1)->count(),
                 "disbursed" => $apps->where("status", 5)->count(),
             ],
-            "notifications" => $sample ? array_slice($this->sampleNotifications(), 0, 3)
-                : DB::table("notifications")->where("user_id", $user->id)->orderByDesc("id")->limit(3)->get(),
+            "notifications" => DB::table("notifications")->where("user_id", $user->id)->orderByDesc("id")->limit(3)->get(),
         ]);
     }
 
     public function applicationsIndex(Request $request)
     {
-        $user = $this->sessionUser();
-        $sample = null === $user;
+        [$user, $fail] = $this->requireUser($request);
+        if ($fail) {
+            return $fail;
+        }
 
-        return $this->panelView($request, "applicationsIndex", [
-            "applications" => $this->applications($user ?? $this->sampleUser(), $sample),
+        return $this->panelView($request, "applicationsIndex", $user, [
+            "applications" => $this->applications($user),
         ]);
     }
 
     public function applicationShow(Request $request, string $application)
     {
-        $user = $this->sessionUser();
-        $sample = null === $user;
-        $apps = $this->applications($user ?? $this->sampleUser(), $sample);
-        $loan = $apps->firstWhere("application_no", $application) ?? $apps->first();
+        [$user, $fail] = $this->requireUser($request);
+        if ($fail) {
+            return $fail;
+        }
 
+        $loan = $this->applications($user)->firstWhere("application_no", $application);
         if (!$loan) {
             return redirect()->route("_userApplications");
         }
 
-        $detail = $sample ? (object) $this->sampleDetail($loan) : DB::table("loan_applications as la")
+        $detail = DB::table("loan_applications as la")
             ->leftJoin("loan_purposes as lp", "lp.id", "=", "la.loan_purpose_id")
             ->leftJoin("cibil_scores as cs", "cs.id", "=", "la.cibil_score")
             ->select(["la.*", "lp.label as purpose", "cs.label as cibil_label"])
@@ -192,67 +335,67 @@ class UserPanelController extends Controller
 
         $bank_link = "";
         if (!empty($loan->self_login_bank_id)) {
-            $bank = $sample ? null : DB::table("self_login_banks")->where("id", $loan->self_login_bank_id)->first();
-            $bank_link = $bank ? trim((string) (2 == $loan->loan_type_id ? $bank->bl_link : $bank->pl_link)) : "https://example.com/apply";
+            $bank = DB::table("self_login_banks")->where("id", $loan->self_login_bank_id)->first();
+            $bank_link = $bank ? trim((string) (2 == $loan->loan_type_id ? $bank->bl_link : $bank->pl_link)) : "";
         }
 
-        $history = $sample ? $this->sampleHistory() : DB::table("application_history as h")
+        $history = DB::table("application_history as h")
             ->leftJoin("loan_status as ls", "ls.id", "=", "h.status_id")
             ->select(["h.*", "ls.label"])
             ->where("h.application_id", $loan->id)
             ->orderBy("h.id")
             ->get();
 
-        return $this->panelView($request, "applicationShowIndex", [
+        return $this->panelView($request, "applicationShowIndex", $user, [
             "loan" => $loan,
             "detail" => $detail,
             "bank_link" => $bank_link,
             "history" => $history,
-            "docs" => $this->documentStatus($loan, $sample),
+            "docs" => $this->documentStatus($loan),
         ]);
     }
 
     public function documentsIndex(Request $request, string $application = "")
     {
-        $user = $this->sessionUser();
-        $sample = null === $user;
-        $apps = $this->applications($user ?? $this->sampleUser(), $sample);
-        $loan = $apps->firstWhere("application_no", $application) ?? $apps->first();
+        [$user, $fail] = $this->requireUser($request);
+        if ($fail) {
+            return $fail;
+        }
 
         if ("POST" === $request->method()) {
             return response()->json(["errors" => ["message" => ["Document upload is not available yet."]]], 422);
         }
 
-        return $this->panelView($request, "documentsIndex", [
+        $apps = $this->applications($user);
+        $loan = $apps->firstWhere("application_no", $application) ?? $apps->first();
+
+        return $this->panelView($request, "documentsIndex", $user, [
             "applications" => $apps,
             "loan" => $loan,
-            "docs" => $loan ? $this->documentStatus($loan, $sample) : [],
+            "docs" => $loan ? $this->documentStatus($loan) : [],
         ]);
     }
 
-    private function documentStatus($loan, bool $sample): array
+    private function documentStatus($loan): array
     {
-        $row = $sample ? null : DB::table("loan_documents")->where("loan_application_id", $loan->id)->first();
-        $groups = ["kyc" => self::DOCUMENTS["kyc"]];
-        $groups["self_employed" === ($loan->employment_type ?? "salaried") ? "self_employed" : "salaried"] =
-            self::DOCUMENTS["self_employed" === ($loan->employment_type ?? "salaried") ? "self_employed" : "salaried"];
-        $groups["other"] = self::DOCUMENTS["other"];
+        $row = DB::table("loan_documents")->where("loan_application_id", $loan->id)->first();
+        $income = "self_employed" === ($loan->employment_type ?? "salaried") ? "self_employed" : "salaried";
+        $groups = [
+            "kyc" => self::DOCUMENTS["kyc"],
+            $income => self::DOCUMENTS[$income],
+            "other" => self::DOCUMENTS["other"],
+        ];
 
         $out = [];
         foreach ($groups as $group => $items) {
             foreach ($items as $key => $label) {
-                $file = in_array($key, ["aadhar_front", "aadhar_back", "pan_front", "selfie"], true)
-                    ? ($loan->$key ?? null)
-                    : ($row->$key ?? null);
-                if ($sample) {
-                    $file = in_array($key, ["aadhar_front", "pan_front", "selfie"], true) ? "sample.jpg" : null;
-                }
+                $file = array_key_exists($key, self::DOCUMENTS["kyc"]) ? ($loan->$key ?? null) : ($row->$key ?? null);
                 $out[$group][] = [
                     "key" => $key,
                     "label" => $label,
                     "file" => $file,
-                    "url" => $file ? ($sample ? asset("assets/images/home_3/auothor.png") : asset("uploads/" . $file)) : "",
-                    "status" => $file ? (($row->status ?? "pending") === "rejected" ? "rejected" : "uploaded") : "missing",
+                    "url" => $file ? asset("uploads/" . $file) : "",
+                    "status" => $file ? ("rejected" === ($row->status ?? "") ? "rejected" : "uploaded") : "missing",
                 ];
             }
         }
@@ -261,27 +404,34 @@ class UserPanelController extends Controller
 
     public function profileIndex(Request $request)
     {
+        [$user, $fail] = $this->requireUser($request);
+        if ($fail) {
+            return $fail;
+        }
+
         if ("POST" === $request->method()) {
             return response()->json(["errors" => ["message" => ["Profile update is not available yet."]]], 422);
         }
 
-        return $this->panelView($request, "profileIndex", [
+        return $this->panelView($request, "profileIndex", $user, [
             "states" => DB::table("states")->select(["id", "name"])->where("status", 0)->orderBy("name")->get(),
         ]);
     }
 
     public function supportIndex(Request $request)
     {
+        [$user, $fail] = $this->requireUser($request);
+        if ($fail) {
+            return $fail;
+        }
+
         if ("POST" === $request->method()) {
             return response()->json(["errors" => ["message" => ["Support tickets are not available yet."]]], 422);
         }
 
-        $user = $this->sessionUser();
-        $sample = null === $user;
-
-        return $this->panelView($request, "supportIndex", [
+        return $this->panelView($request, "supportIndex", $user, [
             "reasons" => DB::table("support_reasons")->select(["id", "label"])->where("status", 1)->orderBy("id")->get(),
-            "tickets" => $sample ? $this->sampleTickets() : DB::table("support_tickets as t")
+            "tickets" => DB::table("support_tickets as t")
                 ->leftJoin("support_reasons as r", "r.id", "=", "t.reason_id")
                 ->select(["t.*", "r.label as reason"])
                 ->where("t.user_id", $user->id)
@@ -292,22 +442,25 @@ class UserPanelController extends Controller
 
     public function notificationsIndex(Request $request)
     {
-        $user = $this->sessionUser();
-        $sample = null === $user;
+        [$user, $fail] = $this->requireUser($request);
+        if ($fail) {
+            return $fail;
+        }
 
-        return $this->panelView($request, "notificationsIndex", [
-            "notifications" => $sample ? $this->sampleNotifications()
-                : DB::table("notifications")->where("user_id", $user->id)->orderByDesc("id")->limit(50)->get(),
+        return $this->panelView($request, "notificationsIndex", $user, [
+            "notifications" => DB::table("notifications")->where("user_id", $user->id)->orderByDesc("id")->limit(50)->get(),
         ]);
     }
 
     public function transactionsIndex(Request $request)
     {
-        $user = $this->sessionUser();
-        $sample = null === $user;
+        [$user, $fail] = $this->requireUser($request);
+        if ($fail) {
+            return $fail;
+        }
 
-        return $this->panelView($request, "transactionsIndex", [
-            "transactions" => $sample ? $this->sampleTransactions() : DB::table("payment_transactions as pt")
+        return $this->panelView($request, "transactionsIndex", $user, [
+            "transactions" => DB::table("payment_transactions as pt")
                 ->leftJoin("loan_applications as la", "la.id", "=", "pt.loan_application_id")
                 ->leftJoin("loan_types as lt", "lt.id", "=", "la.loan_type_id")
                 ->select(["pt.*", "la.application_no", "la.login_type", "lt.label as loan_type"])
@@ -319,87 +472,15 @@ class UserPanelController extends Controller
 
     public function deleteAccountIndex(Request $request)
     {
+        [$user, $fail] = $this->requireUser($request);
+        if ($fail) {
+            return $fail;
+        }
+
         if ("POST" === $request->method()) {
             return response()->json(["errors" => ["message" => ["Account deletion is not available yet."]]], 422);
         }
 
-        return $this->panelView($request, "deleteAccountIndex");
-    }
-
-    private function sampleUser(): object
-    {
-        return (object) [
-            "id" => 0,
-            "name" => "Rahul Mehta",
-            "phone" => "98XXXXXX10",
-            "email" => "rahul@example.com",
-            "gender" => "male",
-            "state_id" => 7,
-            "state_name" => "Gujarat",
-            "city" => "Surat",
-            "pincode" => "395004",
-            "profile_pic" => null,
-            "created_at" => now()->subMonths(2)->toDateTimeString(),
-        ];
-    }
-
-    private function sampleApplications(): array
-    {
-        return [
-            (object) [
-                "id" => 0, "application_no" => "LN-20260918-K7P2QX", "loan_type_id" => 1, "loan_type" => "Personal Loan",
-                "employment_type" => "salaried", "monthly_income" => 45000, "existing_emi" => 5000, "cibil_score" => 2,
-                "eligible_amount" => 500000, "tenure_months" => 36, "interest_rate" => 10.55, "emi_amount" => 16204,
-                "status" => 2, "status_label" => "Under Review", "step" => 8, "login_type" => "self", "payment_status" => 1,
-                "tz_status" => "success", "tz_amount" => 352.82, "self_login_bank_id" => 2, "bank_name" => "Werize", "bank_logo" => "044.png",
-                "applied_at" => now()->subDays(2)->toDateTimeString(), "aadhar_front" => "x", "aadhar_back" => null, "pan_front" => "x", "selfie" => "x",
-            ],
-            (object) [
-                "id" => 0, "application_no" => "LN-20260905-A1B2C3", "loan_type_id" => 2, "loan_type" => "Business Loan",
-                "employment_type" => "self_employed", "monthly_income" => 80000, "existing_emi" => 0, "cibil_score" => 3,
-                "eligible_amount" => 875000, "tenure_months" => 48, "interest_rate" => 12.55, "emi_amount" => 23167,
-                "status" => 1, "status_label" => "Pending", "step" => 3, "login_type" => null, "payment_status" => 0,
-                "tz_status" => null, "tz_amount" => null, "self_login_bank_id" => null, "bank_name" => null, "bank_logo" => null,
-                "applied_at" => now()->subDays(15)->toDateTimeString(), "aadhar_front" => null, "aadhar_back" => null, "pan_front" => null, "selfie" => null,
-            ],
-        ];
-    }
-
-    private function sampleDetail($loan): array
-    {
-        return (array) $loan + ["purpose" => 1 == $loan->loan_type_id ? "Personal Expenses" : "Business Expansion", "cibil_label" => "651 - 750"];
-    }
-
-    private function sampleHistory()
-    {
-        return collect([
-            (object) ["label" => "Pending", "remarks" => "Application received", "created_at" => now()->subDays(2)->toDateTimeString()],
-            (object) ["label" => "Under Review", "remarks" => "Documents being verified by our team", "created_at" => now()->subDay()->toDateTimeString()],
-        ]);
-    }
-
-    private function sampleNotifications(): array
-    {
-        return [
-            (object) ["title" => "Application under review", "message" => "Your personal loan application LN-20260918-K7P2QX is being reviewed.", "is_read" => 0, "created_at" => now()->subHours(3)->toDateTimeString()],
-            (object) ["title" => "Payment received", "message" => "We received your platform fee of \u{20B9}352.82. Thank you!", "is_read" => 0, "created_at" => now()->subDays(2)->toDateTimeString()],
-            (object) ["title" => "Welcome to Flubbi", "message" => "Your account is ready. Check your pre-approved offers any time.", "is_read" => 1, "created_at" => now()->subMonths(2)->toDateTimeString()],
-        ];
-    }
-
-    private function sampleTickets()
-    {
-        return collect([
-            (object) ["ticket_no" => "ST-20260919-3F8KQ2", "reason" => "Payment issue", "message" => "Paid the fee but bank list did not open.", "status" => "open", "created_at" => now()->subDay()->toDateTimeString()],
-            (object) ["ticket_no" => "ST-20260901-9ZD1LM", "reason" => "Documents", "message" => "How do I re-upload my PAN card?", "status" => "closed", "created_at" => now()->subDays(19)->toDateTimeString()],
-        ]);
-    }
-
-    private function sampleTransactions()
-    {
-        return collect([
-            (object) ["application_no" => "LN-20260918-K7P2QX", "loan_type" => "Personal Loan", "login_type" => "self", "base_amount" => 299, "gst_amount" => 53.82, "total_amount" => 352.82, "payment_gateway" => "razorpay", "gateway_payment_id" => "pay_R8kf3XxPq1", "status" => "success", "created_at" => now()->subDays(2)->toDateTimeString()],
-            (object) ["application_no" => "LN-20260820-PQ7M2N", "loan_type" => "Business Loan", "login_type" => "consultant", "base_amount" => 499, "gst_amount" => 89.82, "total_amount" => 588.82, "payment_gateway" => "razorpay", "gateway_payment_id" => null, "status" => "failed", "created_at" => now()->subMonth()->toDateTimeString()],
-        ]);
+        return $this->panelView($request, "deleteAccountIndex", $user);
     }
 }
