@@ -123,10 +123,12 @@ class LoanServiceController extends Controller
             $loan = DB::table("loan_applications")
                 ->where("id", $application_id)
                 ->where("user_id", $user_id)
+                ->where("loan_type_id", self::SERVICES[$type]["loan_type_id"])
                 ->first();
             if ($loan) {
                 return $loan;
             }
+            session()->forget(self::SESSION_KEY . ".application." . $type);
         }
 
         $loan = DB::table("loan_applications")
