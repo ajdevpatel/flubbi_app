@@ -738,7 +738,7 @@ class UserPanelController extends Controller
         ]);
     }
 
-    public function deleteAccountIndex(Request $request)
+    public function deleteAccountIndex(Request $request, OtpService $otp_service)
     {
         [$user, $fail] = $this->requireUser($request);
         if ($fail) {
@@ -746,9 +746,103 @@ class UserPanelController extends Controller
         }
 
         if ("POST" === $request->method()) {
-            return response()->json(["errors" => ["message" => ["Account deletion is not available yet."]]], 422);
+            return $this->deleteAccountPost($request, $user, $otp_service);
         }
 
-        return $this->panelView($request, "deleteAccountIndex", $user);
+        $otp = session(self::SESSION_KEY . ".delete_otp", []);
+        $cooldown = 0;
+        if (!empty($otp["sent_at"])) {
+            $elapsed = (int) Carbon::parse($otp["sent_at"])->diffInSeconds(now());
+            $cooldown = max(0, (int) config("web.sms.otp.cooldown_seconds", 60) - $elapsed);
+        }
+
+        return $this->panelView($request, "deleteAccountIndex", $user, [
+            "otp_sent" => !empty($otp["sent_at"]),
+            "cooldown" => $cooldown,
+        ]);
+    }
+
+    private function deleteAccountPost(Request $request, $user, OtpService $otp_service)
+    {
+        if ("send" === $request->input("action")) {
+            if (!$request->boolean("confirm")) {
+                return response()->json(["errors" => ["message" => ["Please tick the box to confirm you understand this cannot be undone."]]], 422);
+            }
+
+            $sent = $otp_service->issue((string) $user->phone);
+            if (true !== $sent["status"]) {
+                return response()->json(["errors" => ["message" => [$sent["message"]]]], 422);
+            }
+
+            session()->put(self::SESSION_KEY . ".delete_otp", ["sent_at" => now()->toDateTimeString()]);
+
+            return response()->json([
+                "message" => $sent["message"],
+                "cooldown" => $sent["cooldown"] ?? (int) config("web.sms.otp.cooldown_seconds", 60),
+                "cooldown_target" => "#fl-resend-btn",
+                "show" => "#fl-otp-wrap",
+                "hide" => "#fl-send-wrap",
+                "focus" => "#otp",
+            ], 200);
+        }
+
+        $pending = session(self::SESSION_KEY . ".delete_otp", []);
+        if (empty($pending["sent_at"])) {
+            return response()->json(["errors" => ["message" => ["Please request an OTP first."]]], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            "otp" => ["required", "digits:6"],
+        ], [
+            "otp.required" => "Please enter the 6 digit OTP.",
+            "otp.digits" => "OTP must be exactly 6 digits.",
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(["errors" => ["message" => [$validator->errors()->first()]]], 422);
+        }
+
+        $check = $otp_service->verify((string) $user->phone, (string) $request->input("otp"));
+        if (true !== $check["status"]) {
+            $max_attempts = (int) config("web.sms.otp.max_attempts", 5);
+            $attempts = (int) ($pending["attempts"] ?? 0) + 1;
+
+            if ($attempts >= $max_attempts) {
+                DB::table("otp_logs")->where("phone", $user->phone)->where("is_used", 0)->update(["is_used" => 1, "updated_at" => now()]);
+                session()->forget(self::SESSION_KEY . ".delete_otp");
+
+                return response()->json([
+                    "errors" => ["message" => ["Too many wrong attempts. Please request a new OTP."]],
+                    "step" => route("_userDeleteAccount"),
+                ], 422);
+            }
+
+            session()->put(self::SESSION_KEY . ".delete_otp.attempts", $attempts);
+            $left = $max_attempts - $attempts;
+
+            return response()->json([
+                "errors" => ["message" => [$check["message"] . " " . $left . " attempt" . (1 == $left ? "" : "s") . " left."]],
+            ], 422);
+        }
+
+        DB::transaction(function () use ($user) {
+            DB::table("users")->where("id", $user->id)->update([
+                "phone" => $user->id . "_D_" . $user->phone,
+                "email" => $user->email ? "del" . $user->id . "_" . $user->email : null,
+                "status" => 3,
+                "fcm_token" => null,
+                "updated_at" => now(),
+            ]);
+            DB::table("personal_access_tokens")->where("tokenable_id", $user->id)->delete();
+        });
+
+        session()->forget(self::SESSION_KEY);
+        $request->session()->regenerate();
+        session()->flash("success", "Your account has been deleted. You are welcome back any time.");
+
+        return response()->json([
+            "message" => "Account deleted",
+            "step" => route("_homeIndex"),
+        ], 200);
     }
 }
