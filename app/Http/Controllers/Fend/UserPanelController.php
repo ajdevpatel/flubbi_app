@@ -62,6 +62,7 @@ class UserPanelController extends Controller
             ->leftJoin("states as s", "s.id", "=", "u.state_id")
             ->select(["u.*", "s.name as state_name"])
             ->where("u.id", $user_id)
+            ->whereIn("u.status", [0, 1])
             ->whereNull("u.deleted_at")
             ->first();
     }
@@ -226,6 +227,14 @@ class UserPanelController extends Controller
 
         $check = $otp_service->verify($phone, (string) $request->input("otp"));
         if (true !== $check["status"]) {
+            if (!empty($check["burned"])) {
+                session()->forget(self::SESSION_KEY . ".login_otp");
+                return response()->json([
+                    "errors" => ["message" => [$check["message"]]],
+                    "step" => route("_userLogin"),
+                ], 422);
+            }
+
             $max_attempts = (int) config("web.sms.otp.max_attempts", 5);
             $attempts = (int) ($pending["attempts"] ?? 0) + 1;
 
@@ -804,6 +813,14 @@ class UserPanelController extends Controller
 
         $check = $otp_service->verify((string) $user->phone, (string) $request->input("otp"));
         if (true !== $check["status"]) {
+            if (!empty($check["burned"])) {
+                session()->forget(self::SESSION_KEY . ".delete_otp");
+                return response()->json([
+                    "errors" => ["message" => [$check["message"]]],
+                    "step" => route("_userDeleteAccount"),
+                ], 422);
+            }
+
             $max_attempts = (int) config("web.sms.otp.max_attempts", 5);
             $attempts = (int) ($pending["attempts"] ?? 0) + 1;
 

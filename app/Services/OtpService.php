@@ -5,6 +5,7 @@ namespace App\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 
 class OtpService
 {
@@ -87,6 +88,17 @@ class OtpService
 
     public function verify(string $phone, string $otp): array
     {
+        $key = "otp-verify:" . $phone;
+
+        if (RateLimiter::tooManyAttempts($key, (int) config("web.sms.otp.max_attempts_per_phone", 10))) {
+            DB::table("otp_logs")->where("phone", $phone)->where("is_used", 0)->update(["is_used" => 1, "updated_at" => now()]);
+            return [
+                "status" => false,
+                "burned" => true,
+                "message" => "Too many wrong attempts for this number. Please request a new OTP after a few minutes.",
+            ];
+        }
+
         $row = DB::table("otp_logs")
             ->where("phone", $phone)
             ->where("otp", $otp)
@@ -96,11 +108,14 @@ class OtpService
             ->first();
 
         if (!$row) {
+            RateLimiter::hit($key, 300);
             return [
                 "status" => false,
                 "message" => "Invalid or expired OTP. Please check the code or request a new one.",
             ];
         }
+
+        RateLimiter::clear($key);
 
         DB::table("otp_logs")
             ->where("id", $row->id)

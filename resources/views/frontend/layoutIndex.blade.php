@@ -370,7 +370,15 @@
                             <ul>
                                 <li><a href="{{ route('_aboutusPost') }}"><i class="bi bi-chevron-double-right"></i>
                                         About Us</a></li>
-                                <li><a href="#"><i class="bi bi-chevron-double-right"></i> Contact Us</a></li>
+                                <li><a href="{{ route('_contactusPost') }}"><i class="bi bi-chevron-double-right"></i> Contact Us</a></li>
+                                <li><a href="{{ route('_personalServiceIndex') }}"><i class="bi bi-chevron-double-right"></i> Personal Loan</a></li>
+                                <li><a href="{{ route('_businessServiceIndex') }}"><i class="bi bi-chevron-double-right"></i> Business Loan</a></li>
+                                <li><a href="{{ route('_emiCalculatorIndex') }}"><i class="bi bi-chevron-double-right"></i> EMI Calculator</a></li>
+                                @if (0 < (int) app('request')->input('panel_user_id'))
+                                    <li><a href="{{ route('_userDashboard') }}"><i class="bi bi-chevron-double-right"></i> My Account</a></li>
+                                @else
+                                    <li><a href="{{ route('_userLogin') }}"><i class="bi bi-chevron-double-right"></i> Login</a></li>
+                                @endif
                             </ul>
                         </div>
                     </div>
@@ -396,6 +404,8 @@
                                         Disclaimer</a></li>
                                 <li><a href="{{ route('_faqPost') }}"><i class="bi bi-chevron-double-right"></i>
                                         FAQ’s</a></li>
+                                <li><a href="{{ route('_shippingPolicyPost') }}"><i class="bi bi-chevron-double-right"></i>
+                                        Shipping &amp; Delivery Policy</a></li>
                             </ul>
                         </div>
                     </div>

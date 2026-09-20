@@ -98,7 +98,7 @@ class LoanServiceController extends Controller
         if (0 == $user_id) {
             return null;
         }
-        return DB::table("users")->where("id", $user_id)->whereNull("deleted_at")->first();
+        return DB::table("users")->where("id", $user_id)->whereIn("status", [0, 1])->whereNull("deleted_at")->first();
     }
 
     public function sessionApplicationId(string $type): int
@@ -444,6 +444,14 @@ class LoanServiceController extends Controller
 
         $check = $otp_service->verify($phone, (string) $request->input("otp"));
         if (true !== $check["status"]) {
+            if (!empty($check["burned"])) {
+                session()->forget(self::SESSION_KEY . ".otp");
+                return response()->json([
+                    "errors" => ["message" => [$check["message"]]],
+                    "step" => $this->stepUrl($type, "verify"),
+                ], 422);
+            }
+
             $max_attempts = (int) config("web.sms.otp.max_attempts", 5);
             $attempts = (int) ($pending["attempts"] ?? 0) + 1;
 
@@ -798,7 +806,7 @@ class LoanServiceController extends Controller
         foreach (self::TENURES as $months) {
             $tenures[] = [
                 "months" => $months,
-                "emi" => $this->amountFormatIndia($this->emiAmount($rate, $months, $offer_amount)),
+                "emi" => rtrim(rtrim($this->amountFormatIndia($this->emiAmount($rate, $months, $offer_amount)), "0"), "."),
             ];
         }
 
@@ -1050,7 +1058,7 @@ class LoanServiceController extends Controller
         if ("failed" === $request->input("status")) {
             DB::table("payment_transactions")->where("id", $tz->id)->update([
                 "status" => "failed",
-                "gateway_response" => json_encode(["failed" => $request->except(["_token", "status"])]),
+                "gateway_response" => json_encode(["failed" => $request->only(["razorpay_order_id", "error"])]),
                 "updated_at" => now(),
             ]);
             DB::table("loan_applications")->where("id", $loan->id)->update([
@@ -1083,7 +1091,7 @@ class LoanServiceController extends Controller
             DB::table("payment_transactions")->where("id", $tz->id)->update([
                 "status" => "failed",
                 "gateway_payment_id" => $payment_id,
-                "gateway_response" => json_encode(["rejected" => $request->except(["_token"])]),
+                "gateway_response" => json_encode(["rejected" => $request->only(["razorpay_order_id", "razorpay_payment_id", "razorpay_signature"])]),
                 "updated_at" => now(),
             ]);
             DB::table("loan_applications")->where("id", $loan->id)->update([
@@ -1101,7 +1109,7 @@ class LoanServiceController extends Controller
             DB::table("payment_transactions")->where("id", $tz->id)->update([
                 "status" => "success",
                 "gateway_payment_id" => $payment_id,
-                "gateway_response" => json_encode(["payment" => $request->except(["_token"])]),
+                "gateway_response" => json_encode(["payment" => $request->only(["razorpay_order_id", "razorpay_payment_id", "razorpay_signature"])]),
                 "updated_at" => now(),
             ]);
             DB::table("loan_applications")->where("id", $loan->id)->update([

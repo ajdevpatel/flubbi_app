@@ -17,6 +17,7 @@ return [
         "cooldown_seconds" => 60,
         "max_per_hour" => 5,
         "max_attempts" => 5,
+        "max_attempts_per_phone" => 10,
 
         "test_phone" => env("SMS_TEST_PHONE", "8866442200"),
         "test_otp" => "123456",
