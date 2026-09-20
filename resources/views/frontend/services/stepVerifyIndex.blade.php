@@ -1,4 +1,3 @@
-{{-- Step 1 - Name + Mobile + OTP on one screen (Send OTP reveals the OTP box, Verify moves on) --}}
 @extends('frontend.services.stepLayoutIndex')
 
 @section('stepSubtitle')
@@ -36,7 +35,6 @@
             </div>
         </div>
 
-        {{-- stage 1: send --}}
         <div class="fl-actions" id="fl-send-wrap" @if ($otp_sent) hidden @endif>
             <button type="button" class="fl-btn fl-btn--block" data-fl-post="{{ $urls['send-otp'] }}"
                 data-fl-form="#fl-verify-form">
@@ -44,7 +42,6 @@
             </button>
         </div>
 
-        {{-- stage 2: verify (revealed after the OTP goes out; stays open on refresh) --}}
         <div class="fl-otp-wrap" id="fl-otp-wrap" @unless ($otp_sent) hidden @endunless>
             <div class="fl-field">
                 <label class="fl-field__label" for="otp">One time password <span class="fl-req">*</span></label>

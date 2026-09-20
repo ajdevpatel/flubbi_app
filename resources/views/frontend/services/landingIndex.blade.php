@@ -1,4 +1,3 @@
-{{-- Landing page for /pl-service and /bl-service (same view, $service differs). --}}
 @extends('frontend.layoutIndex')
 
 @section('styleIndex')
@@ -24,7 +23,6 @@
         </div>
     </div>
 
-    {{-- ============================ hero ============================ --}}
     <section class="fl-hero">
         <div class="container">
             <div class="row align-items-center">
@@ -73,7 +71,6 @@
         </div>
     </section>
 
-    {{-- ========================= how it works ========================= --}}
     <section class="fl-how">
         <div class="container">
             <div class="row">
@@ -111,7 +108,6 @@
         </div>
     </section>
 
-    {{-- ============================ plans ============================ --}}
     <section class="fl-service">
         <div class="container">
             <div class="row">
@@ -152,7 +148,6 @@
         </div>
     </section>
 
-    {{-- =========================== partners =========================== --}}
     @if (count($partners))
         <section class="fl-how">
             <div class="container">

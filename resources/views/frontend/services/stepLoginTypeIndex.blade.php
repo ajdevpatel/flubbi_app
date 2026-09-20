@@ -1,4 +1,3 @@
-{{-- Step 6 - self login vs hire agent --}}
 @extends('frontend.services.stepLayoutIndex')
 
 @section('stepSubtitle')

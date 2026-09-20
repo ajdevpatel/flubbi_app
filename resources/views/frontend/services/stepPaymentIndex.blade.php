@@ -1,4 +1,3 @@
-{{-- Step 7 - platform fee payment (Razorpay) --}}
 @extends('frontend.services.stepLayoutIndex')
 
 @section('stepSubtitle')

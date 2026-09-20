@@ -1,4 +1,3 @@
-{{-- Step 5 - pre-approved offer + tenure choice --}}
 @extends('frontend.services.stepLayoutIndex')
 
 @section('stepSubtitle')

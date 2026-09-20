@@ -1,13 +1,3 @@
-{{--
-    Shared shell for every pl-service / bl-service step (Cashvizta layout):
-    left  = info panel (headline, ticks, application summary, partner logos)
-    right = white form card with the step progress on top
-
-    Expects: $service, $step, $step_meta, $steps, $total_steps, $urls,
-             $partners, $session_user, $loan, $preview
-    A step view extends this and fills @section('stepBody'); optional
-    @section('stepSubtitle'), @section('stepFoot'), @section('stepJs').
---}}
 @extends('frontend.layoutIndex')
 
 @php
@@ -26,7 +16,6 @@
 @endsection
 
 @section('bodyIndex')
-    {{-- compact banner for step screens - the theme's full-height hero pushes the form below the fold on phones --}}
     <div class="breadcumb-area fl-breadcumb d-flex">
         <div class="container">
             <div class="row align-items-center">
@@ -52,7 +41,6 @@
         <div class="container">
             <div class="row fl-row">
 
-                {{-- ============ left: info panel (below the form on phones) ============ --}}
                 <div class="col-lg-5 order-2 order-lg-1">
                     <div class="fl-info">
                         <span class="fl-card__eyebrow">{{ $service['short'] }} &middot; 100% digital</span>
@@ -101,7 +89,6 @@
                     </div>
                 </div>
 
-                {{-- ============ right: form card ============ --}}
                 <div class="col-lg-7 order-1 order-lg-2">
                     <div class="fl-card">
 

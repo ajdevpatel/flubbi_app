@@ -1,4 +1,3 @@
-{{-- Step 3 - salaried / self employed --}}
 @extends('frontend.services.stepLayoutIndex')
 
 @section('stepSubtitle')

@@ -1,9 +1,3 @@
-/* ==========================================================================
-   Flubbi - pl-service / bl-service loan flow
-   Built on top of the Consalt theme palette:
-   accent #cdb676 | accent-dark #754e15 | ink #09162f | muted #6b7a7a
-   ========================================================================== */
-
 :root {
     --fl-accent: #cdb676;
     --fl-accent-dark: #754e15;
@@ -15,8 +9,6 @@
     --fl-err: #d94848;
     --fl-radius: 14px;
 }
-
-/* ---------- section shell ---------------------------------------------- */
 
 .fl-service {
     padding: 70px 0 90px;
@@ -84,8 +76,6 @@
     }
 }
 
-/* ---------- progress ---------------------------------------------------- */
-
 .fl-progress {
     margin-bottom: 30px;
 }
@@ -106,7 +96,6 @@
     counter-reset: fl-step;
 }
 
-/* the connecting rail sits behind the bubbles */
 .fl-progress__track::before {
     content: "";
     position: absolute;
@@ -192,8 +181,6 @@
     }
 }
 
-/* ---------- fields ------------------------------------------------------ */
-
 .fl-field {
     margin-bottom: 20px;
 }
@@ -274,8 +261,6 @@
     padding-left: 52px;
 }
 
-/* ---------- choice cards (employment / self vs agent) ------------------- */
-
 .fl-choice {
     display: block;
     cursor: pointer;
@@ -351,8 +336,6 @@
     line-height: 1.55;
     color: var(--fl-muted);
 }
-
-/* ---------- buttons ----------------------------------------------------- */
 
 .fl-actions {
     display: flex;
@@ -430,8 +413,6 @@
         width: 100%;
     }
 }
-
-/* ---------- summary / side panel --------------------------------------- */
 
 .fl-side {
     position: sticky;
@@ -511,8 +492,6 @@
     color: var(--fl-accent-dark);
     text-decoration: underline;
 }
-
-/* ---------- landing ----------------------------------------------------- */
 
 .fl-hero {
     padding: 80px 0 70px;
@@ -719,8 +698,6 @@
     }
 }
 
-/* ---------- misc -------------------------------------------------------- */
-
 .fl-inline-msg {
     display: none;
     border-radius: 10px;
@@ -743,10 +720,6 @@
     border: 1px solid rgba(217, 72, 72, 0.35);
     color: var(--fl-err);
 }
-
-/* ==========================================================================
-   Step screens (Cashvizta layout: info left, form card right)
-   ========================================================================== */
 
 .fl-row {
     align-items: flex-start;
@@ -841,8 +814,6 @@
     color: var(--fl-muted);
 }
 
-/* ---------- otp ------------------------------------------------------- */
-
 .fl-otp {
     text-align: center;
     font-size: 26px;
@@ -872,8 +843,6 @@
 .fl-resend .fl-btn--link {
     margin-left: 4px;
 }
-
-/* ---------- loan amount slider ------------------------------------------ */
 
 .fl-amount {
     background: var(--fl-soft);
@@ -977,16 +946,12 @@
     }
 }
 
-/* ---------- choice icon ------------------------------------------------ */
-
 .fl-choice__icon {
     display: block;
     font-size: 26px;
     color: var(--fl-accent-dark);
     margin-bottom: 8px;
 }
-
-/* ---------- offer ------------------------------------------------------ */
 
 .fl-offer {
     text-align: center;
@@ -1094,8 +1059,6 @@
     box-shadow: 0 0 0 3px rgba(205, 182, 118, 0.18);
 }
 
-/* ---------- plan select (self / agent) ---------------------------------- */
-
 .fl-plan--select {
     display: block;
     cursor: pointer;
@@ -1196,8 +1159,6 @@
     font-weight: 700;
 }
 
-/* ---------- payment ----------------------------------------------------- */
-
 .fl-fee {
     border: 1px solid var(--fl-line);
     border-radius: 12px;
@@ -1285,8 +1246,6 @@
     color: var(--fl-ok);
     margin-right: 4px;
 }
-
-/* ---------- banks ------------------------------------------------------- */
 
 .fl-bank-grid {
     display: grid;
@@ -1394,8 +1353,6 @@
     margin-top: 6px;
 }
 
-/* ---------- result ------------------------------------------------------ */
-
 .fl-result {
     text-align: center;
     padding: 12px 10px 24px;
@@ -1448,12 +1405,6 @@
     color: var(--fl-muted);
     margin-bottom: 6px;
 }
-
-/* ==========================================================================
-   Compact spacing for the step screens
-   One block of overrides (same selectors, declared later so they win) so the
-   whole form fits with little or no scrolling. Tune numbers here only.
-   ========================================================================== */
 
 .fl-service {
     padding: 40px 0 56px;
@@ -1640,7 +1591,6 @@
     margin-top: 8px;
 }
 
-/* left info panel */
 .fl-info {
     padding-top: 0;
 }
@@ -1731,10 +1681,6 @@
         font-size: 30px;
     }
 }
-
-/* ---------- compact banner for step screens ------------------------------
-   The theme hero (.breadcumb-area) is ~580px tall; on a phone the form only
-   starts below the fold. Steps get a slim navy band with a gold rule instead. */
 
 .breadcumb-area.fl-breadcumb {
     background: linear-gradient(115deg, rgba(9, 22, 47, 0.94), rgba(9, 22, 47, 0.8)),

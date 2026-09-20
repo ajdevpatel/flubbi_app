@@ -1,17 +1,7 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| Website (pl-service / bl-service) platform fees
-|--------------------------------------------------------------------------
-|
-| These are used by the WEBSITE loan flow only. The mobile app keeps using
-| App\Http\Controllers\API\LoanController::payment_data(), so changing the
-| values here never changes what the app charges.
-|
-*/
-
 return [
+    // website only - the mobile app keeps using API LoanController::payment_data()
     "gst_rate" => 18,
 
     "login_type" => [

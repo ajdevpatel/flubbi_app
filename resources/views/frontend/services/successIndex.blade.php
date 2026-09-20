@@ -1,4 +1,3 @@
-{{-- Result - application submitted --}}
 @extends('frontend.services.stepLayoutIndex')
 
 @section('stepBody')

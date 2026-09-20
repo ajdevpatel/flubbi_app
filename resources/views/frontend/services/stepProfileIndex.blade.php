@@ -1,4 +1,3 @@
-{{-- Step 2 - Email + PIN code + City + State (spec order) --}}
 @extends('frontend.services.stepLayoutIndex')
 
 @section('stepSubtitle')
@@ -46,7 +45,6 @@
             </div>
         </div>
 
-        {{-- no Back here: the mobile number is already verified, there is nothing to go back to --}}
         <div class="fl-actions">
             <button type="submit" class="fl-btn fl-btn--block">
                 Continue <i class="bi bi-arrow-right"></i>

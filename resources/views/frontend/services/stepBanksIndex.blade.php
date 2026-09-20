@@ -1,4 +1,3 @@
-{{-- Step 7A - self login: choose ONE lending partner, then go to its apply link --}}
 @extends('frontend.services.stepLayoutIndex')
 
 @section('stepSubtitle')
@@ -47,7 +46,6 @@
 
 @section('stepJs')
     <script>
-        // Pick one bank: hide the grid, show the chosen card, keep a Change link.
         (function () {
             var $grid = $("#fl-bank-grid"), $picked = $("#fl-bank-picked");
 

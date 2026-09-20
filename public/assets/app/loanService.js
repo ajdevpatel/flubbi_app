@@ -1,13 +1,3 @@
-/* ==========================================================================
-   Flubbi - pl-service / bl-service step flow
-   --------------------------------------------------------------------------
-   Steps are NOT switched in the browser. Every submit is a POST to its own
-   Laravel route; the server validates, saves, and answers with the URL of the
-   next step. The browser then does a real page load. Refresh, back button and
-   "come back tomorrow" therefore all work, because the step the user belongs
-   on is worked out server side from the database.
-   ========================================================================== */
-
 (function ($) {
     "use strict";
 
@@ -34,10 +24,6 @@
         }
         $box.removeClass("is-ok is-err").addClass(isError ? "is-err" : "is-ok").html(text);
     }
-
-    /* ------------------------------------------------------------------
-       Step form submit -> {"message": "...", "step": "<next url>"}
-       ------------------------------------------------------------------ */
 
     $(document).on("submit", "form.js-fl-step", function (e) {
         e.preventDefault();
@@ -74,7 +60,6 @@
                 }
 
                 if (xhr.step) {
-                    // full page load - this is what makes the flow resumable
                     window.location.href = xhr.step;
                     return;
                 }
@@ -88,18 +73,18 @@
 
                 if (typeof ajaxResponseFailure === "function") {
                     ajaxResponseFailure(xhr);
-                    return;
+                } else {
+                    inlineMsg("Something went wrong, please try again.", true);
                 }
-                inlineMsg("Something went wrong, please try again.", true);
+
+                if (xhr.responseJSON && xhr.responseJSON.step) {
+                    setTimeout(function () { window.location.href = xhr.responseJSON.step; }, 1500);
+                }
             },
         });
 
         return false;
     });
-
-    /* ------------------------------------------------------------------
-       Side actions that post but stay on the page (resend OTP, etc.)
-       ------------------------------------------------------------------ */
 
     $(document).on("click", "[data-fl-post]", function (e) {
         e.preventDefault();
@@ -132,7 +117,6 @@
                     inlineMsg(xhr.message, false);
                 }
 
-                // server-driven UI changes: reveal the OTP box, lock the number, etc.
                 if (xhr.show) {
                     $(xhr.show).prop("hidden", false);
                 }
@@ -164,10 +148,6 @@
         return false;
     });
 
-    /* ------------------------------------------------------------------
-       Resend cooldown (seconds come from the server, never trusted alone)
-       ------------------------------------------------------------------ */
-
     function startCooldown($btn, seconds) {
         if (!$btn.length || !seconds || seconds < 1) {
             return;
@@ -197,7 +177,6 @@
             startCooldown($(this), parseInt($(this).attr("data-fl-cooldown"), 10));
         });
 
-        // OTP boxes: jump to submit once filled, on mobile keyboards too
         $(document).on("input", "[data-fl-otp]", function () {
             var $el = $(this);
             var max = parseInt($el.attr("maxlength"), 10) || 6;

@@ -3,38 +3,17 @@
 namespace App\Http\Controllers\Fend;
 
 use App\Http\Controllers\Controller;
+use App\Services\OtpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
-/**
- * Website loan flow for pl-service (Personal Loan) and bl-service (Business Loan).
- *
- * Both services run through this single controller and a single set of views -
- * only the resolved $type ("personal" | "business") differs.
- *
- * Every step is its own route + its own blade. A step submit is an AJAX POST
- * that returns {"step": "<next url>"} and the browser then does a full page
- * load, so progress always survives a refresh. Where the user is standing is
- * derived from the DB (users row + loan_applications.step), never from JS -
- * that is what lets somebody come back days later and land on the step they
- * got stuck on.
- */
 class LoanServiceController extends Controller
 {
-    /**
-     * DESIGN PREVIEW MODE
-     * While true every step renders its real design, the step guard is off and
-     * a POST simply answers with the next step URL without validating or saving
-     * anything - so the whole flow can be clicked through on phone + desktop.
-     * Flip to false once the step logic is wired in.
-     */
     public const DESIGN_PREVIEW = true;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Service + step definitions
-    |--------------------------------------------------------------------------
-    */
+    public const LIVE_STEPS = ["verify", "profile"];
 
     public const SERVICES = [
         "personal" => [
@@ -55,7 +34,6 @@ class LoanServiceController extends Controller
         ],
     ];
 
-    /** Flow order. "no" drives the progress bar, so verify + otp share step 1. */
     public const STEPS = [
         "verify"      => ["no" => 1, "label" => "Mobile",     "title" => "Start with your mobile number",   "next" => "profile"],
         "profile"     => ["no" => 2, "label" => "Details",    "title" => "A few basic details",             "next" => "employment"],
@@ -71,10 +49,8 @@ class LoanServiceController extends Controller
 
     public const TOTAL_STEPS = 7;
 
-    /** Steps the user may walk back into to change an answer. */
     public const EDITABLE_STEPS = ["profile", "employment", "eligibility", "offer", "login-type"];
 
-    /** step slug => route-name suffix */
     public const ROUTE_SUFFIX = [
         "verify" => "Verify",
         "send-otp" => "SendOtp",
@@ -90,16 +66,9 @@ class LoanServiceController extends Controller
         "failed" => "Failed",
     ];
 
-    /** Tenures offered on the pre-approved screen (months) - same list the app uses. */
     public const TENURES = [12, 24, 36, 48, 60, 72];
 
     public const SESSION_KEY = "fl_service";
-
-    /*
-    |--------------------------------------------------------------------------
-    | Service / session helpers
-    |--------------------------------------------------------------------------
-    */
 
     public function service(Request $request): array
     {
@@ -130,7 +99,6 @@ class LoanServiceController extends Controller
         return DB::table("users")->where("id", $user_id)->whereNull("deleted_at")->first();
     }
 
-    /** Application ids are stored per service so PL and BL never overwrite each other. */
     public function sessionApplicationId(string $type): int
     {
         return (int) (session(self::SESSION_KEY . ".application." . $type) ?? 0);
@@ -159,8 +127,6 @@ class LoanServiceController extends Controller
             }
         }
 
-        // Nothing pinned in the session - fall back to an unfinished application
-        // of this type, which is how a returning visitor resumes.
         $loan = DB::table("loan_applications")
             ->where("user_id", $user_id)
             ->where("loan_type_id", self::SERVICES[$type]["loan_type_id"])
@@ -174,12 +140,6 @@ class LoanServiceController extends Controller
 
         return $loan;
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Fees - website only. The mobile app keeps using API payment_data().
-    |--------------------------------------------------------------------------
-    */
 
     public function feeData(string $login_type = "self"): array
     {
@@ -201,12 +161,6 @@ class LoanServiceController extends Controller
             "total_amount" => round($base + $gst, 2),
         ];
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Where is the user standing right now?
-    |--------------------------------------------------------------------------
-    */
 
     public function resolveStep(string $type): string
     {
@@ -240,13 +194,9 @@ class LoanServiceController extends Controller
         };
     }
 
-    /**
-     * Keeps the user on a step they are actually allowed to be on.
-     * Returns a RedirectResponse when the request must be bounced, else null.
-     */
     public function guardStep(Request $request, string $current)
     {
-        if (self::DESIGN_PREVIEW) {
+        if (self::DESIGN_PREVIEW && !in_array($current, self::LIVE_STEPS, true)) {
             return null;
         }
 
@@ -261,12 +211,10 @@ class LoanServiceController extends Controller
         $current_no = array_search($current, $order, true);
         $allowed_no = array_search($allowed, $order, true);
 
-        // Already identified - never send them back to the OTP screen.
         if (0 < $this->sessionUserId() && "verify" === $current) {
             return redirect()->to($this->stepUrl($type, $allowed));
         }
 
-        // Walking back to change an earlier answer is fine.
         if (false !== $current_no && false !== $allowed_no
             && $current_no < $allowed_no
             && in_array($current, self::EDITABLE_STEPS, true)) {
@@ -276,7 +224,6 @@ class LoanServiceController extends Controller
         return redirect()->to($this->stepUrl($type, $allowed));
     }
 
-    /** Everything a step blade needs to draw itself. */
     public function stepView(Request $request, string $step, array $data = [])
     {
         $service = $this->service($request);
@@ -315,7 +262,6 @@ class LoanServiceController extends Controller
         ], $data));
     }
 
-    /** Cashvizta style AJAX reply - the browser then does window.location = step. */
     public function stepResponse(string $type, string $next_step, string $message = "")
     {
         return response()->json([
@@ -331,25 +277,15 @@ class LoanServiceController extends Controller
         ], 422);
     }
 
-    /**
-     * Design preview: a POST just walks to the next step. Returns null when the
-     * request should be handled for real (GET, or preview switched off).
-     */
     private function previewPost(Request $request, string $step)
     {
-        if (!self::DESIGN_PREVIEW || "POST" !== $request->method()) {
+        if (!self::DESIGN_PREVIEW || in_array($step, self::LIVE_STEPS, true) || "POST" !== $request->method()) {
             return null;
         }
         $type = $this->service($request)["type"];
         $next = self::STEPS[$step]["next"] ?? "verify";
         return $this->stepResponse($type, $next, "Preview: moving to the next step");
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Landing + entry
-    |--------------------------------------------------------------------------
-    */
 
     public function landingIndex(Request $request)
     {
@@ -380,29 +316,18 @@ class LoanServiceController extends Controller
         ]);
     }
 
-    /** Single entry point - works out where the visitor belongs and sends them there. */
     public function startIndex(Request $request)
     {
         $type = $this->service($request)["type"];
         return redirect()->to($this->stepUrl($type, $this->resolveStep($type)));
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Step 1 - mobile number + OTP
-    |--------------------------------------------------------------------------
-    */
-
-    /**
-     * One screen: name + mobile -> "Send OTP" (side POST, stays on the page and
-     * reveals the OTP box) -> "Verify & continue" (step POST -> profile).
-     * The OTP box state lives in the session, so a refresh keeps it open.
-     */
-    public function stepVerifyIndex(Request $request)
+    public function stepVerifyIndex(Request $request, OtpService $otp_service)
     {
-        if ($r = $this->previewPost($request, "verify")) {
-            return $r;
+        if ("POST" === $request->method()) {
+            return $this->verifyOtpPost($request, $otp_service);
         }
+
         if ($r = $this->guardStep($request, "verify")) {
             return $r;
         }
@@ -416,56 +341,163 @@ class LoanServiceController extends Controller
 
         $otp = session(self::SESSION_KEY . ".otp", []);
 
+        $cooldown = 0;
+        if (!empty($otp["sent_at"])) {
+            $elapsed = (int) \Carbon\Carbon::parse($otp["sent_at"])->diffInSeconds(now());
+            $cooldown = max(0, (int) config("web.sms.otp.cooldown_seconds", 60) - $elapsed);
+        }
+
         return $this->stepView($request, "verify", [
             "otp_sent" => !empty($otp["phone"]),
             "name" => $otp["name"] ?? "",
             "phone" => $otp["phone"] ?? "",
-            "cooldown" => 60,
+            "cooldown" => $cooldown,
         ]);
     }
 
-    /** Side POST from the verify screen - sends the OTP and reveals the OTP box. */
-    public function sendOtpIndex(Request $request)
+    public function sendOtpIndex(Request $request, OtpService $otp_service)
     {
-        if (self::DESIGN_PREVIEW) {
-            session()->put(self::SESSION_KEY . ".otp", [
-                "name" => (string) $request->input("name", ""),
-                "phone" => (string) $request->input("phone", ""),
-                "sent_at" => now()->toDateTimeString(),
-            ]);
+        $validator = Validator::make($request->all(), [
+            "name" => ["required", "string", "min:2", "max:100", "regex:/^[A-Za-z][A-Za-z .'-]*$/"],
+            "phone" => ["required", "digits:10", "regex:/^[6-9][0-9]{9}$/"],
+        ], [
+            "name.required" => "Please enter your full name.",
+            "name.regex" => "Name can only contain letters, spaces, dots and hyphens.",
+            "phone.required" => "Please enter your mobile number.",
+            "phone.digits" => "Mobile number must be exactly 10 digits.",
+            "phone.regex" => "Please enter a valid Indian mobile number.",
+        ]);
 
-            return response()->json([
-                "message" => "Preview: OTP sent (nothing is really sent yet)",
-                "otp_sent" => true,
-                "cooldown" => 60,
-                "cooldown_target" => "#fl-resend-btn",
-                "show" => "#fl-otp-wrap",
-                "hide" => "#fl-send-wrap",
-                "readonly" => "#name, #phone",
-                "focus" => "#otp",
-            ], 200);
+        if ($validator->fails()) {
+            return $this->stepError([$validator->errors()->first()]);
         }
 
-        return $this->stepError(["OTP sending is not available yet."]);
+        $name = trim((string) $request->input("name"));
+        $phone = (string) $request->input("phone");
+
+        $existing = DB::table("users")->where("phone", $phone)->first();
+        if ($existing && 2 == (int) $existing->status) {
+            return $this->stepError(["This account is blocked. Please contact support."]);
+        }
+
+        $sent = $otp_service->issue($phone);
+        if (true !== $sent["status"]) {
+            return $this->stepError([$sent["message"]]);
+        }
+
+        session()->put(self::SESSION_KEY . ".otp", [
+            "name" => $name,
+            "phone" => $phone,
+            "sent_at" => now()->toDateTimeString(),
+        ]);
+
+        return response()->json([
+            "message" => $sent["message"],
+            "otp_sent" => true,
+            "cooldown" => $sent["cooldown"] ?? (int) config("web.sms.otp.cooldown_seconds", 60),
+            "cooldown_target" => "#fl-resend-btn",
+            "show" => "#fl-otp-wrap",
+            "hide" => "#fl-send-wrap",
+            "readonly" => "#name, #phone",
+            "focus" => "#otp",
+        ], 200);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Step 2 - email, pincode, state, city
-    |--------------------------------------------------------------------------
-    */
+    private function verifyOtpPost(Request $request, OtpService $otp_service)
+    {
+        $type = $this->service($request)["type"];
+
+        $pending = session(self::SESSION_KEY . ".otp", []);
+        $phone = (string) ($pending["phone"] ?? "");
+        if ("" === $phone) {
+            return $this->stepError(["Please request an OTP first."]);
+        }
+
+        $validator = Validator::make($request->all(), [
+            "otp" => ["required", "digits:6"],
+        ], [
+            "otp.required" => "Please enter the 6 digit OTP.",
+            "otp.digits" => "OTP must be exactly 6 digits.",
+        ]);
+
+        if ($validator->fails()) {
+            return $this->stepError([$validator->errors()->first()]);
+        }
+
+        $check = $otp_service->verify($phone, (string) $request->input("otp"));
+        if (true !== $check["status"]) {
+            $max_attempts = (int) config("web.sms.otp.max_attempts", 5);
+            $attempts = (int) ($pending["attempts"] ?? 0) + 1;
+
+            if ($attempts >= $max_attempts) {
+                DB::table("otp_logs")
+                    ->where("phone", $phone)
+                    ->where("is_used", 0)
+                    ->update(["is_used" => 1, "updated_at" => now()]);
+                session()->forget(self::SESSION_KEY . ".otp");
+
+                return response()->json([
+                    "errors" => ["message" => ["Too many wrong attempts. Please request a new OTP."]],
+                    "step" => $this->stepUrl($type, "verify"),
+                ], 422);
+            }
+
+            session()->put(self::SESSION_KEY . ".otp.attempts", $attempts);
+            $left = $max_attempts - $attempts;
+
+            return $this->stepError([$check["message"] . " " . $left . " attempt" . (1 == $left ? "" : "s") . " left."]);
+        }
+
+        $name = trim((string) ($pending["name"] ?? ""));
+        $user = DB::table("users")->where("phone", $phone)->first();
+
+        if ($user && 2 == (int) $user->status) {
+            return $this->stepError(["This account is blocked. Please contact support."]);
+        }
+
+        if (!$user) {
+            $user_id = DB::table("users")->insertGetId([
+                "uuid" => (string) Str::uuid(),
+                "role" => 2,
+                "name" => $name,
+                "phone" => $phone,
+                "status" => 1,
+                "mobile_verified_at" => now(),
+                "created_at" => now(),
+                "updated_at" => now(),
+            ]);
+        } else {
+            $update = [
+                "mobile_verified_at" => now(),
+                "deleted_at" => null,
+                "updated_at" => now(),
+            ];
+            if ("" !== $name) {
+                $update["name"] = $name;
+            }
+            if (0 == (int) $user->status) {
+                $update["status"] = 1;
+            }
+            DB::table("users")->where("id", $user->id)->update($update);
+            $user_id = (int) $user->id;
+        }
+
+        $request->session()->regenerate();
+        session()->forget(self::SESSION_KEY . ".otp");
+        session()->put(self::SESSION_KEY . ".user_id", $user_id);
+
+        return $this->stepResponse($type, $this->resolveStep($type), $check["message"]);
+    }
 
     public function stepProfileIndex(Request $request)
     {
-        if ($r = $this->previewPost($request, "profile")) {
-            return $r;
+        if ("POST" === $request->method()) {
+            return $this->profilePost($request);
         }
         if ($r = $this->guardStep($request, "profile")) {
             return $r;
         }
 
-        // City is free text (spec order: Email, PIN, City, State). On save it is
-        // matched against districts to fill users.city_id when a name lines up.
         $states = DB::table("states")
             ->select(["id", "name"])
             ->where("status", 0)
@@ -477,11 +509,69 @@ class LoanServiceController extends Controller
         ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Step 3 - employment type
-    |--------------------------------------------------------------------------
-    */
+    private function profilePost(Request $request)
+    {
+        $type = $this->service($request)["type"];
+
+        $user = $this->sessionUser();
+        if (!$user) {
+            return response()->json([
+                "errors" => ["message" => ["Your session has expired. Please verify your mobile number again."]],
+                "step" => $this->stepUrl($type, "verify"),
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            "email" => ["required", "string", "email:rfc", "max:255", "unique:users,email," . $user->id],
+            "pincode" => ["required", "digits:6", "regex:/^[1-9][0-9]{5}$/"],
+            "city" => ["required", "string", "min:2", "max:100", "regex:/^[A-Za-z][A-Za-z .'-]*$/"],
+            "state_id" => ["required", "integer", "exists:states,id,status,0"],
+        ], [
+            "email.required" => "Please enter your email address.",
+            "email.email" => "Please enter a valid email address.",
+            "email.unique" => "This email is already registered with another mobile number.",
+            "pincode.required" => "Please enter your PIN code.",
+            "pincode.digits" => "PIN code must be exactly 6 digits.",
+            "pincode.regex" => "Please enter a valid Indian PIN code.",
+            "city.required" => "Please enter your city.",
+            "city.regex" => "City can only contain letters, spaces, dots and hyphens.",
+            "state_id.required" => "Please select your state.",
+            "state_id.exists" => "Please select a valid state.",
+        ]);
+
+        if ($validator->fails()) {
+            return $this->stepError([$validator->errors()->first()]);
+        }
+
+        $email = strtolower(trim((string) $request->input("email")));
+        $city = trim((string) $request->input("city"));
+        $state_id = (int) $request->input("state_id");
+
+        $city_id = DB::table("districts")
+            ->where("state_id", $state_id)
+            ->where("status", 0)
+            ->whereRaw("LOWER(name) = ?", [strtolower($city)])
+            ->value("id");
+        if (!$city_id) {
+            $city_id = DB::table("districts")
+                ->where("state_id", $state_id)
+                ->where("status", 0)
+                ->where("name", "like", $city . "%")
+                ->orderBy("name")
+                ->value("id");
+        }
+
+        DB::table("users")->where("id", $user->id)->update([
+            "email" => $email,
+            "pincode" => (string) $request->input("pincode"),
+            "city" => $city,
+            "state_id" => $state_id,
+            "city_id" => $city_id ?: null,
+            "updated_at" => now(),
+        ]);
+
+        return $this->stepResponse($type, $this->resolveStep($type), "Details saved");
+    }
 
     public function stepEmploymentIndex(Request $request)
     {
@@ -494,12 +584,6 @@ class LoanServiceController extends Controller
 
         return $this->stepView($request, "employment");
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Step 4 - income, cibil, existing emi, amount required
-    |--------------------------------------------------------------------------
-    */
 
     public function stepEligibilityIndex(Request $request)
     {
@@ -521,12 +605,6 @@ class LoanServiceController extends Controller
         ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Step 5 - pre-approved offer + tenure
-    |--------------------------------------------------------------------------
-    */
-
     public function stepOfferIndex(Request $request)
     {
         if ($r = $this->previewPost($request, "offer")) {
@@ -542,7 +620,6 @@ class LoanServiceController extends Controller
         $loan_type = DB::table("loan_types")->where("id", $service["loan_type_id"])->first();
         $rate = (float) ($loan->interest_rate ?? $loan_type->rate ?? 12.5);
 
-        // Real values once the eligibility step is wired; sample figures until then.
         $income = (float) ($loan->monthly_income ?? 50000);
         $existing_emi = (float) ($loan->existing_emi ?? 0);
         $requested = (float) ($loan->eligible_amount ?? 500000);
@@ -568,12 +645,6 @@ class LoanServiceController extends Controller
         ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Step 6 - self login vs hire agent
-    |--------------------------------------------------------------------------
-    */
-
     public function stepLoginTypeIndex(Request $request)
     {
         if ($r = $this->previewPost($request, "login-type")) {
@@ -591,12 +662,6 @@ class LoanServiceController extends Controller
             "selected" => $loan->login_type ?? "self",
         ]);
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Step 7 - payment, then banks (self) / success (agent)
-    |--------------------------------------------------------------------------
-    */
 
     public function stepPaymentIndex(Request $request)
     {

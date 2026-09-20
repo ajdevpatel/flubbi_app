@@ -171,10 +171,6 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
         Route::post("/delete-account-verify", "accountDeleteVerify")->name("_accountDeleteVerify");
     });
 
-    #####################################################################
-    # Loan services - pl-service (personal) & bl-service (business).
-    # Both run on the exact same controller / views, only $type differs.
-    #####################################################################
     foreach (LoanServiceController::SERVICES as $service_type => $service) {
         Route::controller(LoanServiceController::class)
             ->prefix($service["slug"])
@@ -185,7 +181,7 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
                 Route::get("/start", "startIndex")->defaults("type", $service_type)->name($n("Start"));
 
                 Route::any("/verify", "stepVerifyIndex")->defaults("type", $service_type)->name($n("Verify"));
-                Route::post("/send-otp", "sendOtpIndex")->defaults("type", $service_type)->name($n("SendOtp"));
+                Route::post("/send-otp", "sendOtpIndex")->middleware("throttle:10,1")->defaults("type", $service_type)->name($n("SendOtp"));
                 Route::any("/profile", "stepProfileIndex")->defaults("type", $service_type)->name($n("Profile"));
                 Route::any("/employment", "stepEmploymentIndex")->defaults("type", $service_type)->name($n("Employment"));
                 Route::any("/eligibility", "stepEligibilityIndex")->defaults("type", $service_type)->name($n("Eligibility"));

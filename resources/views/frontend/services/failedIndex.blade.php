@@ -1,4 +1,3 @@
-{{-- Result - payment failed / cancelled --}}
 @extends('frontend.services.stepLayoutIndex')
 
 @section('stepBody')

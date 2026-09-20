@@ -1,4 +1,3 @@
-{{-- Step 4 - Monthly Income + CIBIL + Existing EMI + Loan Required (spec order) --}}
 @extends('frontend.services.stepLayoutIndex')
 
 @section('stepSubtitle')
@@ -8,7 +7,6 @@
 @section('stepBody')
     <form action="{{ $urls['eligibility'] }}" method="POST" class="js-fl-step" autocomplete="off" novalidate>
         @csrf
-        {{-- purpose is defaulted per service for now; the dropdown can come back any time --}}
         <input type="hidden" name="loan_purpose_id" value="{{ $service['default_purpose_id'] }}">
 
         <div class="row">
@@ -50,7 +48,6 @@
             </div>
             <div class="col-md-6 d-none d-md-block"></div>
 
-            {{-- loan amount: slider 10K - 30L with a typed box kept in sync --}}
             @php
                 $amt_min = 10000;
                 $amt_max = 3000000;
@@ -91,7 +88,6 @@
 
 @section('stepJs')
     <script>
-        // Slider <-> typed amount <-> big display, all kept in sync and clamped to 10K - 30L.
         (function () {
             var $box = $("#loan_amount"), $range = $("#loan_amount_range"), $show = $("#loan_amount_display");
             var min = parseInt($box.data("min"), 10), max = parseInt($box.data("max"), 10), step = parseInt($box.data("step"), 10);
