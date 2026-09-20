@@ -346,12 +346,15 @@ class UserPanelController extends Controller
             ->orderBy("h.id")
             ->get();
 
+        $docs_allowed = $this->documentsAllowed($loan);
+
         return $this->panelView($request, "applicationShowIndex", $user, [
             "loan" => $loan,
             "detail" => $detail,
             "bank_link" => $bank_link,
             "history" => $history,
-            "docs" => $this->documentStatus($loan),
+            "docs_allowed" => $docs_allowed,
+            "docs" => $docs_allowed ? $this->documentStatus($loan) : [],
         ]);
     }
 
@@ -362,18 +365,119 @@ class UserPanelController extends Controller
             return $fail;
         }
 
+        $apps = $this->applications($user);
+        $eligible = $apps->filter(fn ($a) => $this->documentsAllowed($a))->values();
+        $loan = $eligible->firstWhere("application_no", $application) ?? $eligible->first();
+
         if ("POST" === $request->method()) {
-            return response()->json(["errors" => ["message" => ["Document upload is not available yet."]]], 422);
+            return $this->documentPost($request, $user, $application, $apps);
         }
 
-        $apps = $this->applications($user);
-        $loan = $apps->firstWhere("application_no", $application) ?? $apps->first();
-
         return $this->panelView($request, "documentsIndex", $user, [
-            "applications" => $apps,
+            "applications" => $eligible,
+            "has_applications" => $apps->isNotEmpty(),
             "loan" => $loan,
             "docs" => $loan ? $this->documentStatus($loan) : [],
         ]);
+    }
+
+    public function documentsAllowed($loan): bool
+    {
+        return $loan && "consultant" === $loan->login_type && 1 == (int) $loan->payment_status;
+    }
+
+    private function documentPost(Request $request, $user, string $application, $apps)
+    {
+        $loan = $apps->firstWhere("application_no", $application);
+        if (!$loan) {
+            return response()->json(["errors" => ["message" => ["Application not found."]]], 422);
+        }
+        if (!$this->documentsAllowed($loan)) {
+            return response()->json(["errors" => ["message" => ["Documents can be uploaded only for Hire Agent applications after the platform fee is paid."]]], 422);
+        }
+
+        $types = array_merge(...array_values(array_map("array_keys", self::DOCUMENTS)));
+        $doc_type = (string) $request->input("doc_type");
+
+        $rules = [
+            "doc_type" => ["required", "in:" . implode(",", $types)],
+            "file" => ["required", "file", "mimes:jpg,jpeg,png,pdf", "max:10240"],
+        ];
+        if (in_array($doc_type, ["aadhar_front", "aadhar_back"], true)) {
+            $rules["aadhar_number"] = ["required", "digits:12"];
+        }
+        if ("pan_front" === $doc_type) {
+            $request->merge(["pan_number" => strtoupper(trim((string) $request->input("pan_number")))]);
+            $rules["pan_number"] = ["required", "regex:/^[A-Z]{5}[0-9]{4}[A-Z]$/"];
+        }
+
+        $validator = Validator::make($request->all(), $rules, [
+            "doc_type.required" => "Please choose which document you are uploading.",
+            "doc_type.in" => "Unknown document type.",
+            "file.required" => "Please choose a file.",
+            "file.mimes" => "Only JPG, PNG or PDF files are accepted.",
+            "file.max" => "File must be 10 MB or smaller.",
+            "aadhar_number.required" => "Please enter your 12 digit Aadhaar number.",
+            "aadhar_number.digits" => "Aadhaar number must be exactly 12 digits.",
+            "pan_number.required" => "Please enter your PAN number.",
+            "pan_number.regex" => "PAN must look like ABCDE1234F.",
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(["errors" => ["message" => [$validator->errors()->first()]]], 422);
+        }
+
+        $dir = public_path("uploads");
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        $file = $request->file("file");
+        $name = $loan->id . "_" . $doc_type . "_" . random_int(100000, 999999) . "." . strtolower($file->getClientOriginalExtension());
+        $file->move($dir, $name);
+
+        if (array_key_exists($doc_type, self::DOCUMENTS["kyc"])) {
+            $old = $loan->$doc_type ?? null;
+            $update = [$doc_type => $name, "updated_at" => now()];
+            if ("pan_front" === $doc_type) {
+                $update["pan_number"] = (string) $request->input("pan_number");
+            } else {
+                $update["aadhar_number"] = (string) $request->input("aadhar_number");
+            }
+            DB::table("loan_applications")->where("id", $loan->id)->update($update);
+        } else {
+            $row = DB::table("loan_documents")->where("loan_application_id", $loan->id)->first();
+            if (!$row) {
+                DB::table("loan_documents")->insert([
+                    "loan_application_id" => $loan->id,
+                    "user_id" => $user->id,
+                    $doc_type => $name,
+                    "status" => "pending",
+                    "created_at" => now(),
+                    "updated_at" => now(),
+                ]);
+                $old = null;
+            } else {
+                $old = $row->$doc_type ?? null;
+                DB::table("loan_documents")->where("id", $row->id)->update([
+                    $doc_type => $name,
+                    "status" => "pending",
+                    "rejection_reason" => null,
+                    "updated_at" => now(),
+                ]);
+            }
+        }
+
+        if ($old && str_starts_with($old, $loan->id . "_" . $doc_type . "_") && is_file($dir . DIRECTORY_SEPARATOR . $old)) {
+            @unlink($dir . DIRECTORY_SEPARATOR . $old);
+        }
+
+        $labels = array_merge(...array_values(self::DOCUMENTS));
+
+        return response()->json([
+            "message" => ($labels[$doc_type] ?? "Document") . " uploaded",
+            "step" => route("_userDocuments", $loan->application_no),
+        ], 200);
     }
 
     private function documentStatus($loan): array
@@ -389,13 +493,14 @@ class UserPanelController extends Controller
         $out = [];
         foreach ($groups as $group => $items) {
             foreach ($items as $key => $label) {
-                $file = array_key_exists($key, self::DOCUMENTS["kyc"]) ? ($loan->$key ?? null) : ($row->$key ?? null);
+                $is_kyc = array_key_exists($key, self::DOCUMENTS["kyc"]);
+                $file = $is_kyc ? ($loan->$key ?? null) : ($row->$key ?? null);
                 $out[$group][] = [
                     "key" => $key,
                     "label" => $label,
                     "file" => $file,
                     "url" => $file ? asset("uploads/" . $file) : "",
-                    "status" => $file ? ("rejected" === ($row->status ?? "") ? "rejected" : "uploaded") : "missing",
+                    "status" => $file ? (!$is_kyc && "rejected" === ($row->status ?? "") ? "rejected" : "uploaded") : "missing",
                 ];
             }
         }
@@ -410,12 +515,102 @@ class UserPanelController extends Controller
         }
 
         if ("POST" === $request->method()) {
-            return response()->json(["errors" => ["message" => ["Profile update is not available yet."]]], 422);
+            return $this->profilePost($request, $user);
         }
 
         return $this->panelView($request, "profileIndex", $user, [
             "states" => DB::table("states")->select(["id", "name"])->where("status", 0)->orderBy("name")->get(),
         ]);
+    }
+
+    private function profilePost(Request $request, $user)
+    {
+        $validator = Validator::make($request->all(), [
+            "name" => ["required", "string", "min:2", "max:100", "regex:/^[A-Za-z][A-Za-z .'-]*$/"],
+            "gender" => ["nullable", "in:male,female,other"],
+            "email" => ["required", "string", "email:rfc", "max:255", "unique:users,email," . $user->id],
+            "pincode" => ["required", "digits:6", "regex:/^[1-9][0-9]{5}$/"],
+            "city" => ["required", "string", "min:2", "max:100", "regex:/^[A-Za-z][A-Za-z .'-]*$/"],
+            "state_id" => ["required", "integer", "exists:states,id,status,0"],
+            "profile_pic" => ["nullable", "file", "image", "mimes:jpg,jpeg,png", "max:2048"],
+        ], [
+            "name.required" => "Please enter your full name.",
+            "name.regex" => "Name can only contain letters, spaces, dots and hyphens.",
+            "gender.in" => "Please choose a valid gender.",
+            "email.required" => "Please enter your email address.",
+            "email.email" => "Please enter a valid email address.",
+            "email.unique" => "This email is already registered with another mobile number.",
+            "pincode.required" => "Please enter your PIN code.",
+            "pincode.digits" => "PIN code must be exactly 6 digits.",
+            "pincode.regex" => "Please enter a valid Indian PIN code.",
+            "city.required" => "Please enter your city.",
+            "city.regex" => "City can only contain letters, spaces, dots and hyphens.",
+            "state_id.required" => "Please select your state.",
+            "state_id.exists" => "Please select a valid state.",
+            "profile_pic.image" => "Profile photo must be an image.",
+            "profile_pic.mimes" => "Profile photo must be a JPG or PNG.",
+            "profile_pic.max" => "Profile photo must be 2 MB or smaller.",
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(["errors" => ["message" => [$validator->errors()->first()]]], 422);
+        }
+
+        $city = trim((string) $request->input("city"));
+        $state_id = (int) $request->input("state_id");
+
+        $update = [
+            "name" => trim((string) $request->input("name")),
+            "gender" => $request->input("gender") ?: null,
+            "email" => strtolower(trim((string) $request->input("email"))),
+            "pincode" => (string) $request->input("pincode"),
+            "city" => $city,
+            "state_id" => $state_id,
+            "city_id" => $this->cityId($state_id, $city),
+            "updated_at" => now(),
+        ];
+
+        if ($request->hasFile("profile_pic")) {
+            $file = $request->file("profile_pic");
+            $name = "profile_" . $user->id . "_" . now()->format("YmdHis") . "_" . random_int(1000, 9999) . "." . strtolower($file->getClientOriginalExtension());
+            $dir = public_path("uploads");
+            if (!is_dir($dir)) {
+                mkdir($dir, 0775, true);
+            }
+            $file->move($dir, $name);
+
+            if (!empty($user->profile_pic) && str_starts_with($user->profile_pic, "profile_") && is_file($dir . DIRECTORY_SEPARATOR . $user->profile_pic)) {
+                @unlink($dir . DIRECTORY_SEPARATOR . $user->profile_pic);
+            }
+            $update["profile_pic"] = $name;
+        }
+
+        DB::table("users")->where("id", $user->id)->update($update);
+
+        return response()->json([
+            "message" => "Profile updated",
+            "step" => route("_userProfile"),
+        ], 200);
+    }
+
+    private function cityId(int $state_id, string $city): ?int
+    {
+        $id = DB::table("districts")
+            ->where("state_id", $state_id)
+            ->where("status", 0)
+            ->whereRaw("LOWER(name) = ?", [strtolower($city)])
+            ->value("id");
+
+        if (!$id) {
+            $id = DB::table("districts")
+                ->where("state_id", $state_id)
+                ->where("status", 0)
+                ->where("name", "like", $city . "%")
+                ->orderBy("name")
+                ->value("id");
+        }
+
+        return $id ? (int) $id : null;
     }
 
     public function supportIndex(Request $request)

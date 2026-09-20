@@ -78,23 +78,26 @@
     @endif
 
     <div class="row">
-        <div class="col-lg-6">
-            <div class="up-card">
-                <div class="up-card__title">
-                    <h4>Documents</h4>
-                    <a class="fl-link" href="{{ route('_userDocuments', $loan->application_no) }}">Manage</a>
-                </div>
-                <p style="font-size:14px;color:var(--fl-muted);margin-bottom:10px;">{{ $uploaded }} of {{ $total_docs }} uploaded</p>
-                @foreach ($docs as $group => $items)
-                    @foreach ($items as $d)
-                        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--fl-line);font-size:14px;">
-                            <span>{{ $d['label'] }}</span>
-                            <span class="up-badge up-badge--{{ $d['status'] }}">{{ ucfirst($d['status']) }}</span>
-                        </div>
+        @if ($docs_allowed)
+            <div class="col-12">
+                <div class="up-card">
+                    <div class="up-card__title">
+                        <h4>Documents</h4>
+                        <a class="fl-link" href="{{ route('_userDocuments', $loan->application_no) }}">Manage</a>
+                    </div>
+                    <p style="font-size:14px;color:var(--fl-muted);margin-bottom:10px;">{{ $uploaded }} of {{ $total_docs }} uploaded</p>
+                    @foreach ($docs as $group => $items)
+                        @foreach ($items as $d)
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--fl-line);font-size:14px;">
+                                <span>{{ $d['label'] }}</span>
+                                <span class="up-badge up-badge--{{ $d['status'] }}">{{ ucfirst($d['status']) }}</span>
+                            </div>
+                        @endforeach
                     @endforeach
-                @endforeach
+                </div>
             </div>
-        </div>
+        @endif
+        {{--
         <div class="col-lg-6">
             <div class="up-card">
                 <div class="up-card__title"><h4>Timeline</h4></div>
@@ -116,5 +119,6 @@
                 @endif
             </div>
         </div>
+        --}}
     </div>
 @endsection

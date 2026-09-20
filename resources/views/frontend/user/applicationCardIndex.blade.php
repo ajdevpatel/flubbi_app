@@ -26,6 +26,8 @@
         @else
             <a class="fl-btn fl-btn--sm" href="{{ route('_userApplicationShow', $app->application_no) }}">View details</a>
         @endif
-        <a class="fl-link" href="{{ route('_userDocuments', $app->application_no) }}">Documents</a>
+        @if ('consultant' === $app->login_type && 1 == (int) $app->payment_status)
+            <a class="fl-link" href="{{ route('_userDocuments', $app->application_no) }}">Documents</a>
+        @endif
     </div>
 </div>
