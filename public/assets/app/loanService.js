@@ -97,12 +97,18 @@
             return false;
         }
 
+        var data = $form.length ? new FormData($form.get(0)) : new FormData();
+        var extra = $btn.data("fl-data");
+        if (extra && typeof extra === "object") {
+            Object.keys(extra).forEach(function (k) { data.append(k, extra[k]); });
+        }
+
         btnBusy($btn, true);
 
         $.ajax({
             type: "POST",
             url: url,
-            data: $form.length ? new FormData($form.get(0)) : new FormData(),
+            data: data,
             dataType: "json",
             contentType: false,
             cache: false,

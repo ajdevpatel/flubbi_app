@@ -211,7 +211,7 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
             Route::any("/documents/{application?}", "documentsIndex")->where("application", "[A-Za-z0-9-]+")->name("_userDocuments");
             Route::any("/profile", "profileIndex")->name("_userProfile");
             Route::any("/support", "supportIndex")->name("_userSupport");
-            Route::get("/notifications", "notificationsIndex")->name("_userNotifications");
+            Route::any("/notifications", "notificationsIndex")->name("_userNotifications");
             Route::get("/transactions", "transactionsIndex")->name("_userTransactions");
             Route::any("/delete-account", "deleteAccountIndex")->name("_userDeleteAccount");
         });

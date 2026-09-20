@@ -688,9 +688,36 @@ class UserPanelController extends Controller
             return $fail;
         }
 
+        if ("POST" === $request->method()) {
+            return $this->notificationsPost($request, $user);
+        }
+
         return $this->panelView($request, "notificationsIndex", $user, [
             "notifications" => DB::table("notifications")->where("user_id", $user->id)->orderByDesc("id")->limit(50)->get(),
         ]);
+    }
+
+    private function notificationsPost(Request $request, $user)
+    {
+        $validator = Validator::make($request->all(), [
+            "notification_id" => ["nullable", "integer"],
+            "mark_all" => ["nullable", "boolean"],
+        ]);
+
+        if ($validator->fails() || (!$request->boolean("mark_all") && !$request->filled("notification_id"))) {
+            return response()->json(["errors" => ["message" => ["Nothing to mark as read."]]], 422);
+        }
+
+        $query = DB::table("notifications")->where("user_id", $user->id)->where("is_read", 0);
+        if (!$request->boolean("mark_all")) {
+            $query->where("id", (int) $request->input("notification_id"));
+        }
+        $updated = $query->update(["is_read" => 1, "updated_at" => now()]);
+
+        return response()->json([
+            "message" => $request->boolean("mark_all") ? "All notifications marked as read" : ($updated ? "Marked as read" : "Already read"),
+            "step" => route("_userNotifications"),
+        ], 200);
     }
 
     public function transactionsIndex(Request $request)
