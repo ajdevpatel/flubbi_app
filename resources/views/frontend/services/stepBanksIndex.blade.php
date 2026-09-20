@@ -5,7 +5,7 @@
 @endsection
 
 @section('stepBody')
-    <form action="{{ $urls['banks'] }}" method="POST" class="js-fl-step" id="fl-bank-form" novalidate>
+    <form action="{{ $urls['banks'] }}" method="POST" id="fl-bank-form" novalidate>
         @csrf
         <input type="hidden" name="bank_id" id="fl-bank-id" value="">
 
@@ -33,8 +33,7 @@
                     Continue to <span id="fl-bank-picked-btn"></span> <i class="bi bi-box-arrow-up-right"></i>
                 </button>
             </div>
-            <p class="fl-field__hint">This choice is final for this application. You will be redirected to the partner's
-                secure website to complete your application.</p>
+            <p class="fl-field__hint">This choice is final for this application. The partner's secure website opens in a new tab and this application is saved under My Account.</p>
         </div>
     </form>
 @endsection
@@ -62,6 +61,53 @@
                 $("#fl-bank-id").val("");
                 $picked.prop("hidden", true);
                 $grid.prop("hidden", false);
+            });
+
+            var $form = $("#fl-bank-form"), busy = false;
+            $form.on("submit", function (e) {
+                e.preventDefault();
+                if (busy || !$("#fl-bank-id").val()) {
+                    return false;
+                }
+                busy = true;
+                var $btn = $form.find("[type=submit]").first();
+                var label = $btn.html();
+                $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Please wait...');
+                var tab = window.open("", "_blank");
+
+                $.ajax({
+                    type: "POST",
+                    url: $form.attr("action"),
+                    data: new FormData($form.get(0)),
+                    dataType: "json",
+                    contentType: false,
+                    processData: false,
+                    success: function (res) {
+                        if (res.open && tab) {
+                            tab.location.href = res.open;
+                        } else if (tab) {
+                            tab.close();
+                        }
+                        if (res.message && typeof Notify === "function") {
+                            Notify(res.message, "success");
+                        }
+                        window.location.href = res.step;
+                    },
+                    error: function (xhr) {
+                        if (tab) {
+                            tab.close();
+                        }
+                        busy = false;
+                        $btn.prop("disabled", false).html(label);
+                        if (typeof ajaxResponseFailure === "function") {
+                            ajaxResponseFailure(xhr);
+                        }
+                        if (xhr.responseJSON && xhr.responseJSON.step) {
+                            setTimeout(function () { window.location.href = xhr.responseJSON.step; }, 1500);
+                        }
+                    }
+                });
+                return false;
             });
         })();
     </script>

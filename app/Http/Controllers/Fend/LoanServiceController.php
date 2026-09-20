@@ -324,11 +324,20 @@ class LoanServiceController extends Controller
     {
         $type = $this->service($request)["type"];
 
-        if ($request->boolean("new") && $this->isLocked($this->currentApplication($type))) {
+        if ($this->isFinished($this->currentApplication($type))) {
             session()->forget(self::SESSION_KEY . ".application." . $type);
         }
 
         return redirect()->to($this->stepUrl($type, $this->resolveStep($type)));
+    }
+
+    public function isFinished($loan): bool
+    {
+        if (!$this->isLocked($loan)) {
+            return false;
+        }
+        $awaiting_bank = "self" === $loan->login_type && 1 == (int) $loan->payment_status && empty($loan->self_login_bank_id);
+        return !$awaiting_bank;
     }
 
     public function stepVerifyIndex(Request $request, OtpService $otp_service)
@@ -1176,8 +1185,9 @@ class LoanServiceController extends Controller
         ]);
 
         return response()->json([
-            "message" => "Taking you to " . ucwords($bank->label),
-            "step" => "" !== $link ? $link : $this->stepUrl($type, "success"),
+            "message" => ucwords($bank->label) . " selected. Opening their application page in a new tab.",
+            "step" => route("_userApplicationShow", $loan->application_no),
+            "open" => $link,
         ], 200);
     }
 

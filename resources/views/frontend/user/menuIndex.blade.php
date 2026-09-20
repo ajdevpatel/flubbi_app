@@ -6,7 +6,7 @@
         ['_userDocuments', 'bi-cloud-arrow-up', 'Documents', 0, ['_userDocuments']],
         ['_userProfile', 'bi-person', 'Profile', 0, ['_userProfile']],
         ['_userSupport', 'bi-life-preserver', 'Support', 0, ['_userSupport']],
-        ['_userNotifications', 'bi-bell', 'Notifications', $unread, ['_userNotifications']],
+        // ['_userNotifications', 'bi-bell', 'Notifications', $unread, ['_userNotifications']],
         ['_userTransactions', 'bi-receipt', 'Transactions', 0, ['_userTransactions']],
     ];
 @endphp

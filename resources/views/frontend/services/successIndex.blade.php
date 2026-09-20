@@ -19,6 +19,7 @@
             <a class="fl-btn fl-btn--block" href="{{ $bank_link ?: '#' }}" target="_blank" rel="noopener">
                 Open {{ ucwords($bank->label) }} application <i class="bi bi-box-arrow-up-right"></i>
             </a>
+            <a class="fl-btn fl-btn--ghost fl-btn--block" href="{{ route('_userDashboard') }}"><i class="bi bi-person-circle"></i> Go to My Account</a>
         </div>
         <p class="fl-field__hint">Complete your application on the partner's website. Keep your PAN and Aadhaar handy.</p>
     @else
@@ -26,18 +27,19 @@
             <h5>What happens next</h5>
             <ol>
                 <li>A Flubbi agent calls you within one working day.</li>
-                <li>They collect your documents over WhatsApp and pick the best-fit lender.</li>
-                <li>You get updates by SMS and email until disbursal.</li>
+                <li>Upload your documents under <strong>My Account &rsaquo; Documents</strong> so the agent can start right away.</li>
+                <li>You get updates by SMS, email and in My Account until disbursal.</li>
             </ol>
         </div>
         <div class="fl-actions">
-            <a class="fl-btn fl-btn--ghost fl-btn--block" href="{{ route('_homeIndex') }}"><i class="bi bi-house-door"></i> Back to home</a>
+            <a class="fl-btn fl-btn--block" href="{{ route('_userDocuments', $application_no) }}"><i class="bi bi-cloud-arrow-up"></i> Upload documents</a>
+            <a class="fl-btn fl-btn--ghost fl-btn--block" href="{{ route('_userDashboard') }}"><i class="bi bi-person-circle"></i> Go to My Account</a>
         </div>
     @endif
 
     <div class="fl-resend">
         Need another loan?
-        <a class="fl-link" href="{{ $urls['start'] }}?new=1">Start a new {{ strtolower($service['label']) }} application</a>
+        <a class="fl-link" href="{{ $urls['start'] }}">Start a new {{ strtolower($service['label']) }} application</a>
     </div>
 @endsection
 

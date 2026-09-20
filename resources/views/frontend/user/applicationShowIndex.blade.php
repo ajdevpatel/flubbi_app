@@ -39,8 +39,8 @@
             <div class="up-kv"><span>Loan amount</span><strong>&#8377; {{ number_format((float) ($loan->eligible_amount ?? 0)) }}</strong></div>
             <div class="up-kv"><span>Tenure</span><strong>{{ $loan->tenure_months ? $loan->tenure_months . ' months' : '—' }}</strong></div>
             <div class="up-kv"><span>Interest rate</span><strong>{{ $loan->interest_rate ? rtrim(rtrim(number_format((float) $loan->interest_rate, 2), '0'), '.') . '% p.a.' : '—' }}</strong></div>
-            <div class="up-kv"><span>Monthly EMI</span><strong>{{ $loan->emi_amount ? '&#8377; ' . number_format((float) $loan->emi_amount) : '—' }}</strong></div>
-            <div class="up-kv"><span>Monthly income</span><strong>{{ $loan->monthly_income ? '&#8377; ' . number_format((float) $loan->monthly_income) : '—' }}</strong></div>
+            <div class="up-kv"><span>Monthly EMI</span><strong>{{ $loan->emi_amount ? '₹ ' . number_format((float) $loan->emi_amount) : '—' }}</strong></div>
+            <div class="up-kv"><span>Monthly income</span><strong>{{ $loan->monthly_income ? '₹ ' . number_format((float) $loan->monthly_income) : '—' }}</strong></div>
             <div class="up-kv"><span>Existing EMI</span><strong>&#8377; {{ number_format((float) ($loan->existing_emi ?? 0)) }}</strong></div>
             <div class="up-kv"><span>CIBIL range</span><strong>{{ $detail->cibil_label ?? '—' }}</strong></div>
             <div class="up-kv"><span>Employment</span><strong>{{ 'self_employed' === $loan->employment_type ? 'Self employed' : ($loan->employment_type ? 'Salaried' : '—') }}</strong></div>

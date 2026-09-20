@@ -38,6 +38,7 @@
     </div>
 
     <div class="row">
+        {{--
         <div class="col-lg-7">
             <div class="up-card">
                 <div class="up-card__title">
@@ -58,7 +59,8 @@
                 @endforelse
             </div>
         </div>
-        <div class="col-lg-5">
+        --}}
+        <div class="col-12">
             <div class="up-card">
                 <div class="up-card__title"><h4>Need help?</h4></div>
                 <p style="font-size:14px;color:var(--fl-muted);margin-bottom:12px;">Our team replies within one working day.</p>

@@ -1739,3 +1739,98 @@
         padding-top: 14px;
     }
 }
+
+.fl-card .fl-progress {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+}
+
+.fl-card__head {
+    margin-bottom: 16px;
+}
+
+.fl-field,
+.fl-choice,
+.fl-tenure,
+.fl-plan--select,
+.fl-fee,
+.fl-offer,
+.fl-bank-grid,
+.fl-bank-picked__card,
+.fl-result,
+.fl-amount {
+    margin-bottom: 16px;
+}
+
+.fl-tenures {
+    margin-bottom: 0;
+}
+
+.fl-actions {
+    margin-top: 0;
+}
+
+.fl-otp-wrap {
+    margin-top: 0;
+    padding-top: 16px;
+}
+
+.fl-resend,
+.fl-consent,
+.fl-paybadges,
+.fl-note {
+    margin-top: 16px;
+}
+
+.fl-next ol {
+    margin-bottom: 16px;
+}
+
+.fl-fee {
+    padding: 2px 16px 8px;
+}
+
+.fl-actions .fl-btn + .fl-btn--block {
+    margin-top: 0;
+}
+
+@media (max-width: 767px) {
+    .fl-card .fl-progress {
+        margin-bottom: 14px;
+        padding-bottom: 14px;
+    }
+    .fl-card__head,
+    .fl-field,
+    .fl-choice,
+    .fl-tenure,
+    .fl-plan--select,
+    .fl-fee,
+    .fl-offer,
+    .fl-bank-grid,
+    .fl-bank-picked__card,
+    .fl-result,
+    .fl-amount {
+        margin-bottom: 14px;
+    }
+    .fl-otp-wrap {
+        padding-top: 14px;
+    }
+    .fl-resend,
+    .fl-consent,
+    .fl-paybadges,
+    .fl-note {
+        margin-top: 14px;
+    }
+}
+
+.fl-choice,
+.fl-plan--select {
+    height: calc(100% - 16px);
+}
+
+@media (max-width: 767px) {
+    .fl-choice,
+    .fl-plan--select {
+        height: calc(100% - 14px);
+    }
+}

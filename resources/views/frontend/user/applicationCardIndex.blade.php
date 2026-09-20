@@ -16,7 +16,7 @@
         <div class="up-app__meta" style="margin-top:10px;">
             <span>Amount <strong>&#8377; {{ number_format((float) ($app->eligible_amount ?? 0)) }}</strong></span>
             <span>Tenure <strong>{{ $app->tenure_months ? $app->tenure_months . ' months' : '—' }}</strong></span>
-            <span>EMI <strong>{{ $app->emi_amount ? '&#8377; ' . number_format((float) $app->emi_amount) : '—' }}</strong></span>
+            <span>EMI <strong>{{ $app->emi_amount ? '₹ ' . number_format((float) $app->emi_amount) : '—' }}</strong></span>
             <span>Process <strong>{{ 'consultant' === $app->login_type ? 'Hire Agent' : ('self' === $app->login_type ? 'Self Login' : '—') }}</strong></span>
         </div>
     </div>
