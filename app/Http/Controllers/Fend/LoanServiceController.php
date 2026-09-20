@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Fend;
 
 use App\Http\Controllers\Controller;
 use App\Services\OtpService;
+use App\Services\RazorpayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -11,9 +12,9 @@ use Illuminate\Support\Str;
 
 class LoanServiceController extends Controller
 {
-    public const DESIGN_PREVIEW = true;
+    public const LOAN_AMOUNT_MIN = 10000;
 
-    public const LIVE_STEPS = ["verify", "profile"];
+    public const LOAN_AMOUNT_MAX = 3000000;
 
     public const SERVICES = [
         "personal" => [
@@ -52,6 +53,7 @@ class LoanServiceController extends Controller
     public const EDITABLE_STEPS = ["profile", "employment", "eligibility", "offer", "login-type"];
 
     public const ROUTE_SUFFIX = [
+        "start" => "Start",
         "verify" => "Verify",
         "send-otp" => "SendOtp",
         "profile" => "Profile",
@@ -196,10 +198,6 @@ class LoanServiceController extends Controller
 
     public function guardStep(Request $request, string $current)
     {
-        if (self::DESIGN_PREVIEW && !in_array($current, self::LIVE_STEPS, true)) {
-            return null;
-        }
-
         $type = $this->service($request)["type"];
         $allowed = $this->resolveStep($type);
 
@@ -217,11 +215,26 @@ class LoanServiceController extends Controller
 
         if (false !== $current_no && false !== $allowed_no
             && $current_no < $allowed_no
-            && in_array($current, self::EDITABLE_STEPS, true)) {
+            && in_array($current, self::EDITABLE_STEPS, true)
+            && !$this->isLocked($this->currentApplication($type))) {
             return null;
         }
 
         return redirect()->to($this->stepUrl($type, $allowed));
+    }
+
+    public function isLocked($loan): bool
+    {
+        return $loan && (1 == (int) $loan->payment_status || 1 != (int) $loan->status);
+    }
+
+    public function newApplicationNo(): string
+    {
+        do {
+            $no = "LN-" . now()->format("Ymd") . "-" . strtoupper(Str::random(6));
+        } while (DB::table("loan_applications")->where("application_no", $no)->exists());
+
+        return $no;
     }
 
     public function stepView(Request $request, string $step, array $data = [])
@@ -258,7 +271,6 @@ class LoanServiceController extends Controller
             "partners" => $partners,
             "session_user" => $this->sessionUser(),
             "loan" => "verify" === $step ? null : $this->currentApplication($type),
-            "preview" => self::DESIGN_PREVIEW,
         ], $data));
     }
 
@@ -275,16 +287,6 @@ class LoanServiceController extends Controller
         return response()->json([
             "errors" => ["message" => $messages],
         ], 422);
-    }
-
-    private function previewPost(Request $request, string $step)
-    {
-        if (!self::DESIGN_PREVIEW || in_array($step, self::LIVE_STEPS, true) || "POST" !== $request->method()) {
-            return null;
-        }
-        $type = $this->service($request)["type"];
-        $next = self::STEPS[$step]["next"] ?? "verify";
-        return $this->stepResponse($type, $next, "Preview: moving to the next step");
     }
 
     public function landingIndex(Request $request)
@@ -319,6 +321,11 @@ class LoanServiceController extends Controller
     public function startIndex(Request $request)
     {
         $type = $this->service($request)["type"];
+
+        if ($request->boolean("new") && $this->isLocked($this->currentApplication($type))) {
+            session()->forget(self::SESSION_KEY . ".application." . $type);
+        }
+
         return redirect()->to($this->stepUrl($type, $this->resolveStep($type)));
     }
 
@@ -575,8 +582,8 @@ class LoanServiceController extends Controller
 
     public function stepEmploymentIndex(Request $request)
     {
-        if ($r = $this->previewPost($request, "employment")) {
-            return $r;
+        if ("POST" === $request->method()) {
+            return $this->employmentPost($request);
         }
         if ($r = $this->guardStep($request, "employment")) {
             return $r;
@@ -585,10 +592,70 @@ class LoanServiceController extends Controller
         return $this->stepView($request, "employment");
     }
 
+    private function employmentPost(Request $request)
+    {
+        $service = $this->service($request);
+        $type = $service["type"];
+
+        $user = $this->sessionUser();
+        if (!$user) {
+            return response()->json([
+                "errors" => ["message" => ["Your session has expired. Please verify your mobile number again."]],
+                "step" => $this->stepUrl($type, "verify"),
+            ], 422);
+        }
+
+        if ("profile" === $this->resolveStep($type)) {
+            return response()->json([
+                "errors" => ["message" => ["Please complete your basic details first."]],
+                "step" => $this->stepUrl($type, "profile"),
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            "employment_type" => ["required", "in:salaried,self_employed"],
+        ], [
+            "employment_type.required" => "Please tell us whether you are salaried or self employed.",
+            "employment_type.in" => "Please choose a valid employment type.",
+        ]);
+
+        if ($validator->fails()) {
+            return $this->stepError([$validator->errors()->first()]);
+        }
+
+        $employment_type = (string) $request->input("employment_type");
+        $loan = $this->currentApplication($type);
+
+        if ($loan && !$this->isLocked($loan)) {
+            DB::table("loan_applications")->where("id", $loan->id)->update([
+                "employment_type" => $employment_type,
+                "updated_at" => now(),
+            ]);
+            $loan_id = (int) $loan->id;
+        } else {
+            $loan_id = DB::table("loan_applications")->insertGetId([
+                "user_id" => $user->id,
+                "loan_type_id" => $service["loan_type_id"],
+                "loan_purpose_id" => $service["default_purpose_id"],
+                "employment_type" => $employment_type,
+                "application_no" => $this->newApplicationNo(),
+                "status" => 1,
+                "step" => 1,
+                "applied_at" => now(),
+                "created_at" => now(),
+                "updated_at" => now(),
+            ]);
+        }
+
+        $this->putSessionApplicationId($type, $loan_id);
+
+        return $this->stepResponse($type, "eligibility", "Saved");
+    }
+
     public function stepEligibilityIndex(Request $request)
     {
-        if ($r = $this->previewPost($request, "eligibility")) {
-            return $r;
+        if ("POST" === $request->method()) {
+            return $this->eligibilityPost($request);
         }
         if ($r = $this->guardStep($request, "eligibility")) {
             return $r;
@@ -602,13 +669,95 @@ class LoanServiceController extends Controller
 
         return $this->stepView($request, "eligibility", [
             "cibil_scores" => $cibil_scores,
+            "amount_min" => self::LOAN_AMOUNT_MIN,
+            "amount_max" => self::LOAN_AMOUNT_MAX,
         ]);
+    }
+
+    private function pendingApplicationOrFail(Request $request, string $type)
+    {
+        if (!$this->sessionUser()) {
+            return [null, response()->json([
+                "errors" => ["message" => ["Your session has expired. Please verify your mobile number again."]],
+                "step" => $this->stepUrl($type, "verify"),
+            ], 422)];
+        }
+
+        $loan = $this->currentApplication($type);
+        if (!$loan || $this->isLocked($loan)) {
+            $allowed = $this->resolveStep($type);
+            return [null, response()->json([
+                "errors" => ["message" => [$loan ? "This application is already submitted." : "Please start your application first."]],
+                "step" => $this->stepUrl($type, $allowed),
+            ], 422)];
+        }
+
+        return [$loan, null];
+    }
+
+    private function eligibilityPost(Request $request)
+    {
+        $service = $this->service($request);
+        $type = $service["type"];
+
+        [$loan, $fail] = $this->pendingApplicationOrFail($request, $type);
+        if ($fail) {
+            return $fail;
+        }
+
+        foreach (["monthly_income", "existing_emi", "loan_amount"] as $field) {
+            $request->merge([$field => preg_replace("/[,\s]/", "", (string) $request->input($field, ""))]);
+        }
+        if (!$request->filled("loan_purpose_id")) {
+            $request->merge(["loan_purpose_id" => $service["default_purpose_id"]]);
+        }
+
+        $validator = Validator::make($request->all(), [
+            "monthly_income" => ["required", "integer", "min:5000", "max:10000000"],
+            "cibil_score" => ["required", "integer", "exists:cibil_scores,id,status,1"],
+            "existing_emi" => ["required", "integer", "min:0", "max:10000000", "lt:monthly_income"],
+            "loan_amount" => ["required", "integer", "min:" . self::LOAN_AMOUNT_MIN, "max:" . self::LOAN_AMOUNT_MAX],
+            "loan_purpose_id" => ["required", "integer", "exists:loan_purposes,id,status,1"],
+        ], [
+            "monthly_income.required" => "Please enter your monthly income.",
+            "monthly_income.integer" => "Monthly income must be a whole number.",
+            "monthly_income.min" => "Monthly income must be at least \u{20B9}5,000.",
+            "monthly_income.max" => "Monthly income looks too high. Please check the amount.",
+            "cibil_score.required" => "Please select your CIBIL score range.",
+            "cibil_score.exists" => "Please select a valid CIBIL score range.",
+            "existing_emi.required" => "Please enter your existing EMI (0 if none).",
+            "existing_emi.integer" => "Existing EMI must be a whole number.",
+            "existing_emi.min" => "Existing EMI cannot be negative.",
+            "existing_emi.max" => "Existing EMI looks too high. Please check the amount.",
+            "existing_emi.lt" => "Existing EMI must be less than your monthly income.",
+            "loan_amount.required" => "Please choose the loan amount you need.",
+            "loan_amount.integer" => "Loan amount must be a whole number.",
+            "loan_amount.min" => "Loan amount must be at least \u{20B9}" . number_format(self::LOAN_AMOUNT_MIN) . ".",
+            "loan_amount.max" => "Loan amount cannot exceed \u{20B9}" . number_format(self::LOAN_AMOUNT_MAX) . ".",
+            "loan_purpose_id.exists" => "Please select a valid loan purpose.",
+        ]);
+
+        if ($validator->fails()) {
+            return $this->stepError([$validator->errors()->first()]);
+        }
+
+        DB::table("loan_applications")->where("id", $loan->id)->update([
+            "loan_purpose_id" => (int) $request->input("loan_purpose_id"),
+            "monthly_income" => (int) $request->input("monthly_income"),
+            "existing_emi" => (int) $request->input("existing_emi"),
+            "cibil_score" => (int) $request->input("cibil_score"),
+            "eligible_amount" => (int) $request->input("loan_amount"),
+            "step" => 1 == (int) $loan->step ? 2 : (int) $loan->step,
+            "updated_at" => now(),
+        ]);
+
+        return $this->stepResponse($type, "offer", "Saved");
     }
 
     public function stepOfferIndex(Request $request)
     {
-        if ($r = $this->previewPost($request, "offer")) {
-            return $r;
+        if ("POST" === $request->method()) {
+            return $this->offerPost($request);
         }
         if ($r = $this->guardStep($request, "offer")) {
             return $r;
@@ -617,38 +766,98 @@ class LoanServiceController extends Controller
         $service = $this->service($request);
         $loan = $this->currentApplication($service["type"]);
 
+        return $this->stepView($request, "offer", $this->offerData($service, $loan) + [
+            "selected_tenure" => (int) ($loan->tenure_months ?: 36),
+        ]);
+    }
+
+    public function offerData(array $service, $loan): array
+    {
         $loan_type = DB::table("loan_types")->where("id", $service["loan_type_id"])->first();
-        $rate = (float) ($loan->interest_rate ?? $loan_type->rate ?? 12.5);
+        $rate = (float) ($loan_type->rate ?? 12.5);
 
-        $income = (float) ($loan->monthly_income ?? 50000);
+        $income = (float) ($loan->monthly_income ?? 0);
         $existing_emi = (float) ($loan->existing_emi ?? 0);
-        $requested = (float) ($loan->eligible_amount ?? 500000);
+        $requested = (float) ($loan->eligible_amount ?? self::LOAN_AMOUNT_MIN);
 
-        $eligible = $this->checkUserLoanAmountEligiblity($income, $existing_emi, $rate, $requested);
-        $offer_amount = min($eligible, max($requested, 50000));
+        $eligible = (int) $this->checkUserLoanAmountEligiblity($income, $existing_emi, $rate, $requested);
+        $offer_amount = (int) min($eligible, max($requested, self::LOAN_AMOUNT_MIN));
 
         $tenures = [];
         foreach (self::TENURES as $months) {
             $tenures[] = [
                 "months" => $months,
-                "emi" => $this->emiCalculation($rate, $months / 12, $offer_amount),
+                "emi" => $this->amountFormatIndia($this->emiAmount($rate, $months, $offer_amount)),
             ];
         }
 
-        return $this->stepView($request, "offer", [
+        return [
             "rate" => $rate,
             "eligible_amount" => $eligible,
             "offer_amount" => $offer_amount,
             "requested_amount" => $requested,
             "tenures" => $tenures,
-            "selected_tenure" => (int) ($loan->tenure_months ?? 36),
+        ];
+    }
+
+    public function emiAmount(float $rate, int $months, float $principal): int
+    {
+        $r = $rate / 1200;
+        if ($r <= 0) {
+            return (int) round($principal / $months);
+        }
+        return (int) round($principal * $r * pow(1 + $r, $months) / (pow(1 + $r, $months) - 1));
+    }
+
+    private function offerPost(Request $request)
+    {
+        $service = $this->service($request);
+        $type = $service["type"];
+
+        [$loan, $fail] = $this->pendingApplicationOrFail($request, $type);
+        if ($fail) {
+            return $fail;
+        }
+
+        if ((int) $loan->step < 2 || null === $loan->monthly_income) {
+            return response()->json([
+                "errors" => ["message" => ["Please fill in your income details first."]],
+                "step" => $this->stepUrl($type, "eligibility"),
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            "loan_emi" => ["required", "integer", "in:" . implode(",", self::TENURES)],
+        ], [
+            "loan_emi.required" => "Please choose a tenure.",
+            "loan_emi.integer" => "Please choose a valid tenure.",
+            "loan_emi.in" => "Please choose a valid tenure.",
         ]);
+
+        if ($validator->fails()) {
+            return $this->stepError([$validator->errors()->first()]);
+        }
+
+        $offer = $this->offerData($service, $loan);
+        $months = (int) $request->input("loan_emi");
+
+        DB::table("loan_applications")->where("id", $loan->id)->update([
+            "eligible_amount" => $offer["offer_amount"],
+            "tenure_months" => $months,
+            "interest_rate" => $offer["rate"],
+            "emi_amount" => $this->emiAmount($offer["rate"], $months, $offer["offer_amount"]),
+            "eligibility_status" => "eligible",
+            "step" => 2 == (int) $loan->step ? 3 : (int) $loan->step,
+            "updated_at" => now(),
+        ]);
+
+        return $this->stepResponse($type, "login-type", "Offer accepted");
     }
 
     public function stepLoginTypeIndex(Request $request)
     {
-        if ($r = $this->previewPost($request, "login-type")) {
-            return $r;
+        if ("POST" === $request->method()) {
+            return $this->loginTypePost($request);
         }
         if ($r = $this->guardStep($request, "login-type")) {
             return $r;
@@ -663,34 +872,242 @@ class LoanServiceController extends Controller
         ]);
     }
 
-    public function stepPaymentIndex(Request $request)
+    private function loginTypePost(Request $request)
     {
+        $type = $this->service($request)["type"];
+
+        [$loan, $fail] = $this->pendingApplicationOrFail($request, $type);
+        if ($fail) {
+            return $fail;
+        }
+
+        if ((int) $loan->step < 3 || empty($loan->tenure_months)) {
+            return response()->json([
+                "errors" => ["message" => ["Please accept your offer first."]],
+                "step" => $this->stepUrl($type, "offer"),
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            "login_type" => ["required", "in:self,consultant"],
+        ], [
+            "login_type.required" => "Please choose how you would like to proceed.",
+            "login_type.in" => "Please choose a valid option.",
+        ]);
+
+        if ($validator->fails()) {
+            return $this->stepError([$validator->errors()->first()]);
+        }
+
+        DB::table("loan_applications")->where("id", $loan->id)->update([
+            "login_type" => (string) $request->input("login_type"),
+            "step" => max(7, (int) $loan->step),
+            "updated_at" => now(),
+        ]);
+
+        return $this->stepResponse($type, "payment", "Saved");
+    }
+
+    public function stepPaymentIndex(Request $request, RazorpayService $razorpay)
+    {
+        if ("POST" === $request->method()) {
+            return $this->paymentPost($request, $razorpay);
+        }
         if ($r = $this->guardStep($request, "payment")) {
             return $r;
         }
 
         $loan = $this->currentApplication($this->service($request)["type"]);
-        $login_type = $loan->login_type ?? "self";
 
         return $this->stepView($request, "payment", [
-            "fee" => $this->feeData($login_type),
-            "razorpay_key" => env("RAZORPAY_KEY", ""),
+            "fee" => $this->feeData($loan->login_type ?? "self"),
+            "gateway_ready" => $razorpay->isConfigured(),
         ]);
     }
 
-    public function paymentVerifyIndex(Request $request)
+    private function paymentPost(Request $request, RazorpayService $razorpay)
     {
-        if ($r = $this->previewPost($request, "payment")) {
-            return $r;
+        $service = $this->service($request);
+        $type = $service["type"];
+
+        [$loan, $fail] = $this->pendingApplicationOrFail($request, $type);
+        if ($fail) {
+            return $fail;
         }
 
-        return $this->stepError(["Payment is not available yet."]);
+        if ((int) $loan->step < 7 || empty($loan->login_type)) {
+            return response()->json([
+                "errors" => ["message" => ["Please choose how you would like to proceed first."]],
+                "step" => $this->stepUrl($type, "login-type"),
+            ], 422);
+        }
+
+        if (!$razorpay->isConfigured()) {
+            return $this->stepError(["Online payment is not available right now. Please try again later."]);
+        }
+
+        $user = $this->sessionUser();
+        $fee = $this->feeData($loan->login_type);
+
+        $order = $razorpay->createOrder($fee["total_amount"], $loan->application_no, [
+            "application_no" => $loan->application_no,
+            "login_type" => $loan->login_type,
+            "user_id" => (string) $user->id,
+        ]);
+
+        if (true !== $order["status"]) {
+            return $this->stepError([$order["message"]]);
+        }
+
+        $tz_data = [
+            "base_amount" => $fee["base_amount"],
+            "gst_percentage" => $fee["gst_rate"],
+            "gst_amount" => $fee["gst_amount"],
+            "total_amount" => $fee["total_amount"],
+            "payment_gateway" => "razorpay",
+            "gateway_payment_id" => null,
+            "gateway_transaction_id" => $order["id"],
+            "gateway_response" => json_encode(["order" => $order]),
+            "status" => "pending",
+            "updated_at" => now(),
+        ];
+
+        $existing = DB::table("payment_transactions")->where("loan_application_id", $loan->id)->first();
+        if ($existing) {
+            DB::table("payment_transactions")->where("id", $existing->id)->update($tz_data);
+        } else {
+            DB::table("payment_transactions")->insert($tz_data + [
+                "user_id" => $user->id,
+                "loan_application_id" => $loan->id,
+                "created_at" => now(),
+            ]);
+        }
+
+        return response()->json([
+            "order" => [
+                "key" => $razorpay->key(),
+                "order_id" => $order["id"],
+                "amount" => $order["amount"],
+                "currency" => $order["currency"],
+                "name" => config("web.store_data.app_name", "Flubbi"),
+                "description" => $fee["label"] . " fee - " . $loan->application_no,
+                "prefill" => [
+                    "name" => (string) $user->name,
+                    "email" => (string) $user->email,
+                    "contact" => (string) $user->phone,
+                ],
+                "notes" => ["application_no" => $loan->application_no],
+            ],
+            "verify_url" => $this->stepUrl($type, "payment-verify"),
+            "failed_url" => $this->stepUrl($type, "failed"),
+        ], 200);
+    }
+
+    public function paymentVerifyIndex(Request $request, RazorpayService $razorpay)
+    {
+        $type = $this->service($request)["type"];
+
+        if (!$this->sessionUser()) {
+            return response()->json([
+                "errors" => ["message" => ["Your session has expired. Please verify your mobile number again."]],
+                "step" => $this->stepUrl($type, "verify"),
+            ], 422);
+        }
+
+        $loan = $this->currentApplication($type);
+        if (!$loan) {
+            return response()->json([
+                "errors" => ["message" => ["Please start your application first."]],
+                "step" => $this->stepUrl($type, $this->resolveStep($type)),
+            ], 422);
+        }
+
+        $after_payment = "self" === $loan->login_type ? "banks" : "success";
+
+        $tz = DB::table("payment_transactions")->where("loan_application_id", $loan->id)->first();
+        if (!$tz) {
+            return response()->json([
+                "errors" => ["message" => ["Please start the payment first."]],
+                "step" => $this->stepUrl($type, "payment"),
+            ], 422);
+        }
+
+        if ("success" === $tz->status && 1 == (int) $loan->payment_status) {
+            return $this->stepResponse($type, $after_payment, "Payment already received");
+        }
+
+        if ("failed" === $request->input("status")) {
+            DB::table("payment_transactions")->where("id", $tz->id)->update([
+                "status" => "failed",
+                "gateway_response" => json_encode(["failed" => $request->except(["_token", "status"])]),
+                "updated_at" => now(),
+            ]);
+            DB::table("loan_applications")->where("id", $loan->id)->update([
+                "payment_status" => 2,
+                "updated_at" => now(),
+            ]);
+
+            return response()->json([
+                "message" => "Payment was not completed",
+                "step" => $this->stepUrl($type, "failed"),
+            ], 200);
+        }
+
+        $validator = Validator::make($request->all(), [
+            "razorpay_order_id" => ["required", "string"],
+            "razorpay_payment_id" => ["required", "string"],
+            "razorpay_signature" => ["required", "string"],
+        ]);
+
+        if ($validator->fails()) {
+            return $this->stepError(["Payment details are incomplete. Please try again."]);
+        }
+
+        $order_id = (string) $request->input("razorpay_order_id");
+        $payment_id = (string) $request->input("razorpay_payment_id");
+        $signature = (string) $request->input("razorpay_signature");
+
+        if ($order_id !== (string) $tz->gateway_transaction_id
+            || !$razorpay->verifySignature($order_id, $payment_id, $signature)) {
+            DB::table("payment_transactions")->where("id", $tz->id)->update([
+                "status" => "failed",
+                "gateway_payment_id" => $payment_id,
+                "gateway_response" => json_encode(["rejected" => $request->except(["_token"])]),
+                "updated_at" => now(),
+            ]);
+            DB::table("loan_applications")->where("id", $loan->id)->update([
+                "payment_status" => 2,
+                "updated_at" => now(),
+            ]);
+
+            return response()->json([
+                "errors" => ["message" => ["Payment could not be verified. If money was deducted it will be refunded automatically."]],
+                "step" => $this->stepUrl($type, "failed"),
+            ], 422);
+        }
+
+        DB::transaction(function () use ($tz, $loan, $payment_id, $request) {
+            DB::table("payment_transactions")->where("id", $tz->id)->update([
+                "status" => "success",
+                "gateway_payment_id" => $payment_id,
+                "gateway_response" => json_encode(["payment" => $request->except(["_token"])]),
+                "updated_at" => now(),
+            ]);
+            DB::table("loan_applications")->where("id", $loan->id)->update([
+                "status" => 2,
+                "payment_status" => 1,
+                "step" => 8,
+                "updated_at" => now(),
+            ]);
+        });
+
+        return $this->stepResponse($type, $after_payment, "Payment successful");
     }
 
     public function stepBanksIndex(Request $request)
     {
-        if ($r = $this->previewPost($request, "banks")) {
-            return $r;
+        if ("POST" === $request->method()) {
+            return $this->banksPost($request);
         }
         if ($r = $this->guardStep($request, "banks")) {
             return $r;
@@ -710,35 +1127,94 @@ class LoanServiceController extends Controller
         ]);
     }
 
+    private function banksPost(Request $request)
+    {
+        $service = $this->service($request);
+        $type = $service["type"];
+
+        if (!$this->sessionUser()) {
+            return response()->json([
+                "errors" => ["message" => ["Your session has expired. Please verify your mobile number again."]],
+                "step" => $this->stepUrl($type, "verify"),
+            ], 422);
+        }
+
+        $loan = $this->currentApplication($type);
+        if (!$loan || 1 != (int) $loan->payment_status || "self" !== $loan->login_type) {
+            return response()->json([
+                "errors" => ["message" => ["Please complete the platform fee payment first."]],
+                "step" => $this->stepUrl($type, $this->resolveStep($type)),
+            ], 422);
+        }
+
+        if (!empty($loan->self_login_bank_id)) {
+            return response()->json([
+                "errors" => ["message" => ["You have already selected a lending partner."]],
+                "step" => $this->stepUrl($type, "success"),
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            "bank_id" => ["required", "integer", "exists:self_login_banks,id,status,1"],
+        ], [
+            "bank_id.required" => "Please select a lending partner.",
+            "bank_id.exists" => "Please select a valid lending partner.",
+        ]);
+
+        if ($validator->fails()) {
+            return $this->stepError([$validator->errors()->first()]);
+        }
+
+        $bank = DB::table("self_login_banks")->where("id", (int) $request->input("bank_id"))->first();
+        $link = trim((string) ("business" === $type ? $bank->bl_link : $bank->pl_link));
+
+        DB::table("loan_applications")->where("id", $loan->id)->update([
+            "self_login_bank_id" => $bank->id,
+            "updated_at" => now(),
+        ]);
+
+        return response()->json([
+            "message" => "Taking you to " . ucwords($bank->label),
+            "step" => "" !== $link ? $link : $this->stepUrl($type, "success"),
+        ], 200);
+    }
+
     public function successIndex(Request $request)
     {
         $service = $this->service($request);
-        $loan = $this->currentApplication($service["type"]);
+        $type = $service["type"];
+        $loan = $this->currentApplication($type);
+
+        if (!$loan || 1 != (int) $loan->payment_status) {
+            return redirect()->to($this->stepUrl($type, $this->resolveStep($type)));
+        }
 
         $bank = null;
+        $link = "";
         if (!empty($loan->self_login_bank_id)) {
             $bank = DB::table("self_login_banks")->where("id", $loan->self_login_bank_id)->first();
-        }
-        if (!$bank && self::DESIGN_PREVIEW) {
-            $bank = DB::table("self_login_banks")->where("status", 1)->orderBy("label")->first();
-        }
-
-        $link = "";
-        if ($bank) {
-            $link = "business" === $service["type"] ? $bank->bl_link : $bank->pl_link;
+            if ($bank) {
+                $link = trim((string) ("business" === $type ? $bank->bl_link : $bank->pl_link));
+            }
         }
 
         return $this->stepView($request, "success", [
             "view" => "successIndex",
-            "login_type" => $loan->login_type ?? "self",
-            "application_no" => $loan->application_no ?? "LN-" . date("Ymd") . "-PREVIEW",
+            "login_type" => $loan->login_type,
+            "application_no" => $loan->application_no,
             "bank" => $bank,
-            "bank_link" => trim($link),
+            "bank_link" => $link,
         ]);
     }
 
     public function failedIndex(Request $request)
     {
+        $type = $this->service($request)["type"];
+
+        if (!$this->currentApplication($type)) {
+            return redirect()->to($this->stepUrl($type, $this->resolveStep($type)));
+        }
+
         return $this->stepView($request, "failed", [
             "view" => "failedIndex",
         ]);

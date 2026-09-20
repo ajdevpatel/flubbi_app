@@ -188,7 +188,7 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
                 Route::any("/offer", "stepOfferIndex")->defaults("type", $service_type)->name($n("Offer"));
                 Route::any("/login-type", "stepLoginTypeIndex")->defaults("type", $service_type)->name($n("LoginType"));
 
-                Route::get("/payment", "stepPaymentIndex")->defaults("type", $service_type)->name($n("Payment"));
+                Route::any("/payment", "stepPaymentIndex")->defaults("type", $service_type)->name($n("Payment"));
                 Route::post("/payment-verify", "paymentVerifyIndex")->defaults("type", $service_type)->name($n("PaymentVerify"));
 
                 Route::any("/banks", "stepBanksIndex")->defaults("type", $service_type)->name($n("Banks"));

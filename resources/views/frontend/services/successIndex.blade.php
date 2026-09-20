@@ -34,6 +34,11 @@
             <a class="fl-btn fl-btn--ghost fl-btn--block" href="{{ route('_homeIndex') }}"><i class="bi bi-house-door"></i> Back to home</a>
         </div>
     @endif
+
+    <div class="fl-resend">
+        Need another loan?
+        <a class="fl-link" href="{{ $urls['start'] }}?new=1">Start a new {{ strtolower($service['label']) }} application</a>
+    </div>
 @endsection
 
 @section('stepFoot')

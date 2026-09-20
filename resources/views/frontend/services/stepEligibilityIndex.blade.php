@@ -49,8 +49,8 @@
             <div class="col-md-6 d-none d-md-block"></div>
 
             @php
-                $amt_min = 10000;
-                $amt_max = 3000000;
+                $amt_min = $amount_min;
+                $amt_max = $amount_max;
                 $amt_step = 10000;
                 $amt_val = (int) ($loan->eligible_amount ?? 500000);
                 $amt_val = max($amt_min, min($amt_max, $amt_val));
@@ -70,8 +70,8 @@
                     <input type="range" class="fl-range" id="loan_amount_range" min="{{ $amt_min }}" max="{{ $amt_max }}"
                         step="{{ $amt_step }}" value="{{ $amt_val }}" aria-label="Loan amount slider">
                     <div class="fl-range__scale">
-                        <span>&#8377; 10,000</span>
-                        <span>&#8377; 30,00,000</span>
+                        <span>&#8377; {{ number_format($amt_min) }}</span>
+                        <span>&#8377; {{ number_format($amt_max) }}</span>
                     </div>
                 </div>
             </div>

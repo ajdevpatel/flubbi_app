@@ -137,9 +137,6 @@
                         @endif
                     </div>
 
-                    @if ($preview)
-                        <div class="fl-preview-tag">Design preview &mdash; nothing is saved yet</div>
-                    @endif
                 </div>
 
             </div>

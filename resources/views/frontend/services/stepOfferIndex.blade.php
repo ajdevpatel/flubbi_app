@@ -16,8 +16,6 @@
 
     <form action="{{ $urls['offer'] }}" method="POST" class="js-fl-step" novalidate>
         @csrf
-        <input type="hidden" name="loan_amount" value="{{ (int) $offer_amount }}">
-        <input type="hidden" name="interest_rate" value="{{ $rate }}">
 
         <label class="fl-field__label">Choose your tenure <span class="fl-req">*</span></label>
         <div class="row fl-tenures">

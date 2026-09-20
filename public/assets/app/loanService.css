@@ -806,14 +806,6 @@
     flex: 1 1 auto;
 }
 
-.fl-preview-tag {
-    margin-top: 12px;
-    text-align: center;
-    font-size: 12px;
-    letter-spacing: 0.5px;
-    color: var(--fl-muted);
-}
-
 .fl-otp {
     text-align: center;
     font-size: 26px;
@@ -1585,10 +1577,6 @@
 .fl-result h3 {
     font-size: 22px;
     margin: 10px 0 6px;
-}
-
-.fl-preview-tag {
-    margin-top: 8px;
 }
 
 .fl-info {
