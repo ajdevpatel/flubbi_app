@@ -50,12 +50,18 @@
             <div class="up-card">
                 <div class="up-card__title"><h4>Your tickets</h4></div>
                 @forelse ($tickets as $t)
+                    @php
+                        $ticket_badge = ['open' => ['pending', 'Open'], 'in_progress' => ['review', 'In progress'], 'resolved' => ['approved', 'Resolved'], 'closed' => ['closed', 'Closed']][$t->status] ?? ['pending', ucfirst($t->status)];
+                    @endphp
                     <div class="up-ticket">
                         <div class="up-ticket__head">
                             <strong>{{ $t->ticket_no }}</strong>
-                            <span class="up-badge up-badge--{{ 'closed' === $t->status ? 'closed' : ('resolved' === $t->status ? 'approved' : 'review') }}">{{ ucfirst($t->status) }}</span>
+                            <span class="up-badge up-badge--{{ $ticket_badge[0] }}">{{ $ticket_badge[1] }}</span>
                         </div>
                         <p><strong style="color:var(--fl-ink);">{{ $t->reason ?? 'General' }}</strong> &mdash; {{ $t->message }}</p>
+                        @if (!empty($t->admin_reply))
+                            <div class="up-note" style="margin-top:10px;padding:10px 14px;"><i class="bi bi-reply"></i><div><strong>Flubbi:</strong> {{ $t->admin_reply }}</div></div>
+                        @endif
                         <small>{{ date('d M Y, h:i A', strtotime($t->created_at)) }}</small>
                     </div>
                 @empty

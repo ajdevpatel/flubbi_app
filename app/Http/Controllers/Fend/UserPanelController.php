@@ -621,7 +621,7 @@ class UserPanelController extends Controller
         }
 
         if ("POST" === $request->method()) {
-            return response()->json(["errors" => ["message" => ["Support tickets are not available yet."]]], 422);
+            return $this->supportPost($request, $user);
         }
 
         return $this->panelView($request, "supportIndex", $user, [
@@ -633,6 +633,52 @@ class UserPanelController extends Controller
                 ->orderByDesc("t.id")
                 ->get(),
         ]);
+    }
+
+    private function supportPost(Request $request, $user)
+    {
+        $validator = Validator::make($request->all(), [
+            "reason_id" => ["required", "integer", "exists:support_reasons,id,status,1"],
+            "message" => ["required", "string", "min:10", "max:1000"],
+        ], [
+            "reason_id.required" => "Please select a reason.",
+            "reason_id.exists" => "Please select a valid reason.",
+            "message.required" => "Please describe your issue.",
+            "message.min" => "Please describe your issue in at least 10 characters.",
+            "message.max" => "Message can be at most 1000 characters.",
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(["errors" => ["message" => [$validator->errors()->first()]]], 422);
+        }
+
+        $today = DB::table("support_tickets")
+            ->where("user_id", $user->id)
+            ->whereDate("created_at", now()->toDateString())
+            ->count();
+        if ($today >= 5) {
+            return response()->json(["errors" => ["message" => ["You have raised 5 tickets today. Please wait for our reply or try again tomorrow."]]], 422);
+        }
+
+        do {
+            $ticket_no = "ST-" . now()->format("Ymd") . "-" . strtoupper(\Illuminate\Support\Str::random(6));
+        } while (DB::table("support_tickets")->where("ticket_no", $ticket_no)->exists());
+
+        DB::table("support_tickets")->insert([
+            "ticket_no" => $ticket_no,
+            "user_id" => $user->id,
+            "reason_id" => (int) $request->input("reason_id"),
+            "message" => trim((string) $request->input("message")),
+            "priority" => "medium",
+            "status" => "open",
+            "created_at" => now(),
+            "updated_at" => now(),
+        ]);
+
+        return response()->json([
+            "message" => "Ticket " . $ticket_no . " raised. We will get back within one working day.",
+            "step" => route("_userSupport"),
+        ], 200);
     }
 
     public function notificationsIndex(Request $request)
