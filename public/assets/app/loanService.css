@@ -1449,6 +1449,289 @@
     margin-bottom: 6px;
 }
 
+/* ==========================================================================
+   Compact spacing for the step screens
+   One block of overrides (same selectors, declared later so they win) so the
+   whole form fits with little or no scrolling. Tune numbers here only.
+   ========================================================================== */
+
+.fl-service {
+    padding: 40px 0 56px;
+}
+
+.fl-card {
+    padding: 24px 26px 26px;
+}
+
+.fl-card .fl-progress {
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+}
+
+.fl-progress__dot {
+    width: 32px;
+    height: 32px;
+    line-height: 26px;
+    margin-bottom: 6px;
+}
+
+.fl-progress__track::before {
+    top: 15px;
+}
+
+.fl-card__head {
+    margin-bottom: 16px;
+}
+
+.fl-card__title {
+    font-size: 22px;
+}
+
+.fl-card__sub {
+    font-size: 14px;
+}
+
+.fl-field {
+    margin-bottom: 14px;
+}
+
+.fl-field__label {
+    margin-bottom: 6px;
+}
+
+.fl-field__control,
+.fl-card select.fl-field__control {
+    height: 48px;
+}
+
+.fl-field__hint {
+    margin-top: 5px;
+    font-size: 12.5px;
+}
+
+.fl-btn {
+    min-height: 50px;
+}
+
+.fl-actions {
+    margin-top: 4px;
+}
+
+.fl-consent {
+    margin-top: 14px;
+    font-size: 12.5px;
+    line-height: 1.55;
+}
+
+.fl-otp-wrap {
+    padding-top: 16px;
+}
+
+.fl-resend {
+    margin-top: 12px;
+}
+
+.fl-choice {
+    padding: 14px 14px 14px 46px;
+    margin-bottom: 12px;
+}
+
+.fl-choice__tick {
+    left: 14px;
+    top: 17px;
+}
+
+.fl-choice__icon {
+    font-size: 22px;
+    margin-bottom: 4px;
+}
+
+.fl-amount {
+    padding: 14px 16px 12px;
+}
+
+.fl-amount__display {
+    font-size: 28px;
+    margin: 8px 0 8px;
+}
+
+.fl-offer {
+    padding: 18px 16px 16px;
+    margin-bottom: 18px;
+}
+
+.fl-offer__amount {
+    font-size: 36px;
+}
+
+.fl-offer__meta {
+    margin-top: 8px;
+}
+
+.fl-tenure {
+    margin-bottom: 10px;
+}
+
+.fl-tenure__box {
+    padding: 10px 6px;
+}
+
+.fl-plan--select {
+    margin-bottom: 12px;
+}
+
+.fl-plan__inner {
+    padding: 20px 18px 16px;
+}
+
+.fl-plan__icon {
+    font-size: 24px;
+    margin-bottom: 6px;
+}
+
+.fl-plan__list {
+    margin-top: 10px;
+}
+
+.fl-plan__list li {
+    margin-bottom: 5px;
+}
+
+.fl-fee {
+    margin-bottom: 16px;
+    padding: 2px 16px 8px;
+}
+
+.fl-fee__head {
+    padding: 12px 0;
+}
+
+.fl-fee__row {
+    padding: 7px 0;
+}
+
+.fl-paybadges {
+    margin-top: 12px;
+}
+
+.fl-bank-grid {
+    gap: 10px;
+}
+
+.fl-bank {
+    padding: 10px 6px 8px;
+}
+
+.fl-result {
+    padding: 4px 10px 18px;
+    margin-bottom: 18px;
+}
+
+.fl-result i {
+    font-size: 50px;
+}
+
+.fl-result h3 {
+    font-size: 22px;
+    margin: 10px 0 6px;
+}
+
+.fl-preview-tag {
+    margin-top: 8px;
+}
+
+/* left info panel */
+.fl-info {
+    padding-top: 0;
+}
+
+.fl-info__title {
+    font-size: 26px;
+    margin: 10px 0 8px;
+}
+
+.fl-info__sub {
+    margin-bottom: 14px;
+}
+
+.fl-info .fl-ticks {
+    margin-bottom: 16px;
+}
+
+.fl-info .fl-ticks li {
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.fl-info .fl-summary {
+    padding: 20px 20px;
+    margin-bottom: 16px;
+}
+
+.fl-info .fl-summary h4 {
+    margin-bottom: 10px;
+}
+
+.fl-summary__row {
+    padding: 8px 0;
+}
+
+.fl-partners--compact img {
+    height: 34px;
+}
+
+@media (max-width: 991px) {
+    .fl-info {
+        padding-top: 22px;
+    }
+}
+
+@media (max-width: 767px) {
+    .fl-service {
+        padding: 18px 0 40px;
+    }
+    .fl-card {
+        padding: 16px 14px 18px;
+    }
+    .fl-card .fl-progress {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+    }
+    .fl-progress__count {
+        margin-bottom: 8px;
+    }
+    .fl-progress__dot {
+        width: 24px;
+        height: 24px;
+        line-height: 18px;
+        margin-bottom: 0;
+    }
+    .fl-progress__track::before {
+        top: 11px;
+    }
+    .fl-card__head {
+        margin-bottom: 12px;
+    }
+    .fl-card__title {
+        font-size: 19px;
+    }
+    .fl-card__sub {
+        font-size: 13px;
+    }
+    .fl-field {
+        margin-bottom: 12px;
+    }
+    .fl-btn {
+        min-height: 48px;
+    }
+    .fl-info__title {
+        font-size: 22px;
+    }
+    .fl-offer__amount {
+        font-size: 30px;
+    }
+}
+
 /* ---------- compact banner for step screens ------------------------------
    The theme hero (.breadcumb-area) is ~580px tall; on a phone the form only
    starts below the fold. Steps get a slim navy band with a gold rule instead. */
@@ -1456,7 +1739,7 @@
 .breadcumb-area.fl-breadcumb {
     background: linear-gradient(115deg, rgba(9, 22, 47, 0.94), rgba(9, 22, 47, 0.8)),
         url(../images/inner-img/breadcrumb_bg.png) center / cover no-repeat;
-    padding: 52px 0 46px;
+    padding: 38px 0 34px;
     border-bottom: 3px solid var(--fl-accent);
 }
 
@@ -1496,7 +1779,7 @@
 }
 
 .fl-breadcumb + .fl-service {
-    padding-top: 44px;
+    padding-top: 28px;
 }
 
 .fl-breadcumb + .fl-hero {
@@ -1505,20 +1788,20 @@
 
 @media (max-width: 767px) {
     .breadcumb-area.fl-breadcumb {
-        padding: 26px 0 22px;
+        padding: 18px 0 16px;
     }
     .fl-breadcumb + .fl-hero {
         padding-top: 30px;
     }
     .fl-breadcumb .breadcumb-title h4 {
-        font-size: 22px;
+        font-size: 20px;
         padding-bottom: 2px;
     }
     .fl-breadcumb .breadcumb-content ul li,
     .fl-breadcumb .breadcumb-content ul li a {
-        font-size: 12.5px;
+        font-size: 12px;
     }
     .fl-breadcumb + .fl-service {
-        padding-top: 22px;
+        padding-top: 14px;
     }
 }
