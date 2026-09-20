@@ -36,6 +36,15 @@ class FendAuth
             "is_footer_chat_enquiry_show" => 1,
         ]);
 
+        $panel_user_id = (int) (session("fl_service.user_id") ?? 0);
+        $panel_user = 0 < $panel_user_id
+            ? DB::table("users")->select(["id", "name", "phone"])->where("id", $panel_user_id)->whereNull("deleted_at")->first()
+            : null;
+        $request->merge([
+            "panel_user_id" => $panel_user->id ?? 0,
+            "panel_user_name" => $panel_user->name ?? "",
+        ]);
+
         #############################################
 
         $site_op = collect(DB::table("web_options")->select([

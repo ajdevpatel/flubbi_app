@@ -23,6 +23,7 @@ use App\Http\Middleware\MinifyHtml;
 use App\Http\Middleware\FendAuth;
 use App\Http\Controllers\Fend\HomeController;
 use App\Http\Controllers\Fend\LoanServiceController;
+use App\Http\Controllers\Fend\UserPanelController;
 
 
 
@@ -196,6 +197,25 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
                 Route::get("/failed", "failedIndex")->defaults("type", $service_type)->name($n("Failed"));
             });
     }
+
+    Route::controller(UserPanelController::class)->group(function () {
+        Route::any("/login", "loginIndex")->name("_userLogin");
+        Route::post("/login/send-otp", "loginSendOtp")->middleware("throttle:10,1")->name("_userLoginSendOtp");
+        Route::get("/logout", "logoutIndex")->name("_userLogout");
+
+        Route::prefix("user")->group(function () {
+            Route::get("/", fn () => redirect()->route("_userDashboard"));
+            Route::get("/dashboard", "dashboardIndex")->name("_userDashboard");
+            Route::get("/applications", "applicationsIndex")->name("_userApplications");
+            Route::get("/applications/{application}", "applicationShow")->where("application", "[A-Za-z0-9-]+")->name("_userApplicationShow");
+            Route::any("/documents/{application?}", "documentsIndex")->where("application", "[A-Za-z0-9-]+")->name("_userDocuments");
+            Route::any("/profile", "profileIndex")->name("_userProfile");
+            Route::any("/support", "supportIndex")->name("_userSupport");
+            Route::get("/notifications", "notificationsIndex")->name("_userNotifications");
+            Route::get("/transactions", "transactionsIndex")->name("_userTransactions");
+            Route::any("/delete-account", "deleteAccountIndex")->name("_userDeleteAccount");
+        });
+    });
 });
 
 /*

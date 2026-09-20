@@ -153,6 +153,13 @@
                 </div>
                 <div class="col-lg-3">
                     <div class="consalt_header-right">
+                        <div class="header-button style_two">
+                            @if (0 < (int) app('request')->input('panel_user_id'))
+                                <a href="{{ route('_userDashboard') }}"><i class="bi bi-person-circle"></i> My Account</a>
+                            @else
+                                <a href="{{ route('_userLogin') }}"><i class="bi bi-person"></i> Login</a>
+                            @endif
+                        </div>
                         <div class="sidebar-btn">
                             <div class="nav-btn navSidebar-button"><span><i class="bi bi-filter-left"></i></span>
                             </div>
@@ -181,6 +188,11 @@
                         </ul>
                     </li>
                     <li><a href="{{ route('_contactusPost') }}">Contact</a></li>
+                    @if (0 < (int) app('request')->input('panel_user_id'))
+                        <li><a href="{{ route('_userDashboard') }}">My Account</a></li>
+                    @else
+                        <li><a href="{{ route('_userLogin') }}">Login</a></li>
+                    @endif
                 </ul>
             </nav>
         </div>
