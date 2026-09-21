@@ -28,6 +28,7 @@
                     <tr>
                         <th>Index</th>
                         <th>Update Date</th>
+                        <th>Update Time</th>
                         <th>SMS Type</th>
                         <th>SMS</th>
                         <th class='text-center'>Edit</th>
@@ -72,6 +73,10 @@
                     {
                         data: "updated_at",
                         name: "updated_at"
+                    },
+                    {
+                        data: "updated_time",
+                        name: "updated_time"
                     },
                     {
                         data: "op_label",

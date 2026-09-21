@@ -47,6 +47,7 @@ echo today()->format('Y-m-d'); @endphp" />
                     <tr>
                         <th>Index</th>
                         <th>Date</th>
+                        <th>Time</th>
                         <th>Status</th>
                         <th>Name</th>
                         <th>Mobile</th>

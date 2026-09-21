@@ -17,15 +17,8 @@ class SupportController extends Controller
     public function supportPostIndex(Request $request)
     {
         if ($request->ajax() && "POST" === $request->method()) {
-            $fdate = config("web.webapp.filter_from_date");
-            $tdate = date("Y-m-d 00:00:00");
-            if ($request->has("fdate") && !empty($request->fdate)) {
-                $fdate = $request->fdate;
-            }
-            if ($request->has("tdate") && !empty($request->tdate)) {
-                $tdate = $request->tdate . " 23:59:59";
-            }
-
+            $fdate = $request->filled("fdate") ? date("Y-m-d 00:00:00", strtotime($request->fdate)) : null;
+            $tdate = $request->filled("tdate") ? date("Y-m-d 23:59:59", strtotime($request->tdate)) : null;
             $table_data = DB::table("support_tickets")->select([
                 "support_tickets.id as p_id",
                 "support_tickets.ticket_no",
@@ -42,52 +35,69 @@ class SupportController extends Controller
             })->leftJoin("support_reasons", function ($join) {
                 $join->on("support_reasons.id", "=", "support_tickets.reason_id");
             })
-                ->whereBetween("support_tickets.created_at", [$fdate, $tdate])
+                ->when($fdate, fn ($q) => $q->where("support_tickets.created_at", ">=", $fdate))
+                ->when($tdate, fn ($q) => $q->where("support_tickets.created_at", "<=", $tdate))
                 ->orderBy("support_tickets.id", "desc")
                 ->get();
 
             return DataTables::of($table_data)
                 ->addIndexColumn()
+                ->addColumn("created_date", function ($row) {
+                    if (empty($row->created_at)) {
+                        return "-";
+                    }
+                    return date("d M Y", strtotime($row->created_at));
+                })
+                ->addColumn("created_time", function ($row) {
+                    if (empty($row->created_at)) {
+                        return "-";
+                    }
+                    return date("h:i A", strtotime($row->created_at));
+                })
                 ->addColumn("full_name", function ($row) {
-                    return $row->name;
+                    return !empty($row->name) ? e($row->name) : "-";
                 })
                 ->addColumn("mobile", function ($row) {
-                    return $row->phone;
+                    return !empty($row->phone) ? e($row->phone) : "-";
                 })
                 ->addColumn("email", function ($row) {
-                    return $row->email;
-                })
-                ->addColumn("created_at", function ($row) {
-                    return $row->created_at;
+                    return !empty($row->email) ? e($row->email) : "-";
                 })
                 ->addColumn("ticket_no", function ($row) {
-                    return "<b>" . $row->ticket_no . "</b>";
+                    if (empty($row->ticket_no)) {
+                        return "-";
+                    }
+                    return "<b>" . e($row->ticket_no) . "</b>";
                 })
                 ->addColumn("message", function ($row) {
-                    return $row->message;
+                    return !empty($row->message) ? e($row->message) : "-";
                 })
                 ->addColumn("reason_label", function ($row) {
-                    return $row->reason_label;
+                    return !empty($row->reason_label) ? e($row->reason_label) : "-";
                 })
                 ->addColumn("status", function ($row) {
-                    $html = "";
-                    if ("open" == $row->status) {
-                        $html = '<span class="badge bg-label-warning"><i class="ti ti-progress-alert"></i> open </span>';
-                    } else if ("processing" == $row->status) {
-                        $html = '<span class="badge bg-label-info"><i class="ti ti-progress-check"></i> processing </span>';
-                    } else if ("close/no response" == $row->status) {
-                        $html = '<span class="badge bg-label-danger"><i class="ti ti-square-rounded-check"></i> close/no response </span>';
-                    } else if ("hold" == $row->status) {
-                        $html = '<span class="badge bg-label-primary"><i class="ti ti-square-progress-check"></i> hold </span>';
-                    } else if ("reopen" == $row->status) {
-                        $html = '<span class="badge bg-label-info"><i class="ti ti-square-progress-check"></i> reopen </span>';
-                    } else if ("solve" == $row->status) {
-                        $html = '<span class="badge bg-label-success"><i class="ti ti-square-rounded-check"></i> solve </span>';
+                    $badges = [
+                        "open" => ["bg-label-warning", "ti-progress-alert", "Open"],
+                        "in_progress" => ["bg-label-info", "ti-progress-check", "In Progress"],
+                        "processing" => ["bg-label-info", "ti-progress-check", "Processing"],
+                        "hold" => ["bg-label-primary", "ti-player-pause", "Hold"],
+                        "reopen" => ["bg-label-info", "ti-refresh", "Re-open"],
+                        "resolved" => ["bg-label-success", "ti-square-rounded-check", "Resolved"],
+                        "solve" => ["bg-label-success", "ti-square-rounded-check", "Solve"],
+                        "closed" => ["bg-label-secondary", "ti-square-rounded-x", "Closed"],
+                        "close/no response" => ["bg-label-danger", "ti-square-rounded-x", "Close/No Response"],
+                    ];
+                    if (empty($row->status)) {
+                        return "-";
                     }
-                    return $html;
+                    if (!array_key_exists($row->status, $badges)) {
+                        return '<span class="badge bg-label-secondary">' . e($row->status) . '</span>';
+                    }
+                    [$class, $icon, $label] = $badges[$row->status];
+                    return '<span class="badge ' . $class . '"><i class="ti ' . $icon . '"></i> ' . $label . ' </span>';
                 })
                 ->addColumn("action", function ($row) {
-                    $html = ""; /* $this->getTableActionHtml([
+                    $html = $this->getTableActionHtml([
                         "edit" => route("_supportPostEdit", [
                             "key" => $row->p_id
                         ])
@@ -98,10 +108,10 @@ class SupportController extends Controller
                                 "key" => $row->u_uuid
                             ])
                         ]);
-                    } */
+                    }
                     return $html;
                 })
-                ->rawColumns(["action", "status", "ticket_no", "reason_label", "message", "created_at", "full_name", "mobile", "email"])
+                ->rawColumns(["action", "status", "ticket_no"])
                 ->make(true);
         }
         return view("backend.supportPostIndex");

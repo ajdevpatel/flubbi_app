@@ -245,6 +245,14 @@ abstract class Controller
                     </a>';
         }
 
+        if (array_key_exists("invoice", $url) && "" !== $url["invoice"]) {
+            $html .= '<a href="' . $url['invoice'] . '" title="Download Invoice">
+                        <button class="mx-1 btn btn-icon btn-label-warning waves-effect">
+                            <span class="ti ti-file-download"></span>
+                        </button>
+                    </a>';
+        }
+
         if (array_key_exists("add_user", $url) && "" !== $url["add_user"]) {
             $html .= '<a href="' . $url['add_user'] . '">
                         <button class="mx-1 btn btn-icon btn-label-info waves-effect">

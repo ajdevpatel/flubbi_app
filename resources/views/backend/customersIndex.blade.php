@@ -51,6 +51,7 @@ echo today()->format('Y-m-d'); @endphp" />
                     <tr>
                         <th>Index</th>
                         <th>Created Date</th>
+                        <th>Time</th>
                         <th>Status</th>
                         <th>Full Name</th>
                         <th>Phone</th>

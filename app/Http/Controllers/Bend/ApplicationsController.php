@@ -23,15 +23,8 @@ class ApplicationsController extends Controller
         $login_type = $request->input('login_type') ?: $request->route('login_type');
 
         if ($request->ajax()) {
-            $fdate = config("web.webapp.filter_from_date");
-            $tdate = config("web.webapp.filter_to_date");
-            if ($request->has("fdate") && !empty($request->fdate)) {
-                $fdate = $request->fdate;
-            }
-            if ($request->has("tdate") && !empty($request->tdate)) {
-                $tdate = $request->tdate . " 23:59:59";
-            }
-
+            $fdate = $request->filled("fdate") ? date("Y-m-d 00:00:00", strtotime($request->fdate)) : null;
+            $tdate = $request->filled("tdate") ? date("Y-m-d 23:59:59", strtotime($request->tdate)) : null;
             $query = DB::table("loan_applications")->select([
                 "loan_applications.id as app_id",
                 "loan_applications.application_no as uuid",
@@ -53,7 +46,7 @@ class ApplicationsController extends Controller
                 "users.email as u_email",
                 "users.city as u_city",
                 "states.name as u_state",
-                "loan_applications.pincode as u_pincode",
+                DB::raw("COALESCE(NULLIF(loan_applications.pincode, ''), users.pincode) as u_pincode"),
                 "loan_applications.credit_card_usage",
             ])->Join("users", function ($join) {
                 $join->on("users.id", "=", "loan_applications.user_id");
@@ -68,7 +61,8 @@ class ApplicationsController extends Controller
             })->leftJoin("loan_purposes", function ($join) {
                 $join->on("loan_purposes.id", "=", "loan_applications.loan_purpose_id");
             })
-                ->whereBetween("loan_applications.applied_at", [$fdate, $tdate]);
+                ->when($fdate, fn ($q) => $q->where("loan_applications.applied_at", ">=", $fdate))
+                ->when($tdate, fn ($q) => $q->where("loan_applications.applied_at", "<=", $tdate));
 
             $typeMap = [
                 'personal' => 1,
@@ -97,46 +91,49 @@ class ApplicationsController extends Controller
                     return $html;
                 })
                 ->addColumn("rec_date", function ($row) {
-                    return $row->rec_date;
+                    return !empty($row->rec_date) ? date("d M Y", strtotime($row->rec_date)) : "-";
+                })
+                ->addColumn("rec_time", function ($row) {
+                    return !empty($row->rec_date) ? date("h:i A", strtotime($row->rec_date)) : "-";
                 })
                 ->addColumn("u_name", function ($row) {
-                    return ucfirst($row->u_name);
+                    return !empty($row->u_name) ? ucfirst($row->u_name) : "-";
                 })
                 ->addColumn("phone", function ($row) {
-                    return $row->u_phone;
+                    return !empty($row->u_phone) ? $row->u_phone : "-";
                 })
                 ->addColumn("email", function ($row) {
-                    return $row->u_email;
+                    return !empty($row->u_email) ? $row->u_email : "-";
                 })
                 ->addColumn("state", function ($row) {
-                    return $row->u_state;
+                    return !empty($row->u_state) ? $row->u_state : "-";
                 })
                 ->addColumn("city", function ($row) {
-                    return $row->u_city;
+                    return !empty($row->u_city) ? $row->u_city : "-";
                 })
                 ->addColumn("pincode", function ($row) {
-                    return $row->u_pincode;
+                    return !empty($row->u_pincode) ? $row->u_pincode : "-";
                 })
                 ->addColumn("loan_purposes", function ($row) {
-                    return $row->loan_purposes;
+                    return !empty($row->loan_purposes) ? $row->loan_purposes : "-";
                 })
-                ->addColumn("cibil_score", function ($row) {
-                    return $row->cibil_scores;
+                ->addColumn("cibil_scores", function ($row) {
+                    return !empty($row->cibil_scores) ? $row->cibil_scores : "-";
                 })
                 ->addColumn("loan_amount", function ($row) {
-                    return $row->loan_amount;
+                    return ($row->loan_amount === null || $row->loan_amount === "") ? "-" : $row->loan_amount;
                 })
                 ->addColumn("income", function ($row) {
-                    return $row->income;
+                    return ($row->income === null || $row->income === "") ? "-" : $row->income;
                 })
                 ->addColumn("loantenure", function ($row) {
-                    return $row->loantenure;
+                    return ($row->loantenure === null || $row->loantenure === "") ? "-" : $row->loantenure;
                 })
                 ->addColumn("current_emi", function ($row) {
-                    return $row->emi_paying;
+                    return ($row->emi_paying === null || $row->emi_paying === "") ? "-" : $row->emi_paying;
                 })
                 ->addColumn("emi_bounce", function ($row) {
-                    return $row->emi_bounce;
+                    return !empty($row->emi_bounce) ? $row->emi_bounce : "-";
                 })
                 ->addColumn("credit_card_usage", function ($row) {
                     return $row->credit_card_usage == 1 ? "Yes" : "No";
@@ -154,21 +151,6 @@ class ApplicationsController extends Controller
                 })
                 ->rawColumns([
                     "status",
-                    "rec_date",
-                    "u_name",
-                    "phone",
-                    "email",
-                    "state",
-                    "city",
-                    "pincode",
-                    "loan_purposes",
-                    "cibil_score",
-                    "loan_amount",
-                    "income",
-                    "loantenure",
-                    "current_emi",
-                    "emi_bounce",
-                    "credit_card_usage",
                     "action",
                 ])
                 ->make(true);

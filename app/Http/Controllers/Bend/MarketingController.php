@@ -17,15 +17,8 @@ class MarketingController extends Controller
     public function manualMarketingIndex(Request $request)
     {
         if ($request->ajax() && "POST" === $request->method()) {
-            $fdate = config("web.webapp.filter_from_date");
-            $tdate = date("Y-m-d 00:00:00");
-            if ($request->has("fdate") && !empty($request->fdate)) {
-                $fdate = $request->fdate;
-            }
-            if ($request->has("tdate") && !empty($request->tdate)) {
-                $tdate = $request->tdate . " 23:59:59";
-            }
-
+            $fdate = $request->filled("fdate") ? date("Y-m-d 00:00:00", strtotime($request->fdate)) : null;
+            $tdate = $request->filled("tdate") ? date("Y-m-d 23:59:59", strtotime($request->tdate)) : null;
             $table_data = DB::table("marketing_manual_index")->select([
                 "marketing_manual_index.id as p_id",
                 "marketing_manual_index.*",
@@ -151,29 +144,33 @@ class MarketingController extends Controller
     public function otpLogsIndex(Request $request)
     {
         if ($request->ajax() && "POST" === $request->method()) {
-            $fdate = config("web.webapp.filter_from_date");
-            $tdate = date("Y-m-d 00:00:00");
-            if ($request->has("fdate") && !empty($request->fdate)) {
-                $fdate = $request->fdate;
-            }
-            if ($request->has("tdate") && !empty($request->tdate)) {
-                $tdate = $request->tdate . " 23:59:59";
-            }
-
+            $fdate = $request->filled("fdate") ? date("Y-m-d 00:00:00", strtotime($request->fdate)) : null;
+            $tdate = $request->filled("tdate") ? date("Y-m-d 23:59:59", strtotime($request->tdate)) : null;
             $table_data = DB::table("otp_logs")->select([
                 "otp_logs.id as p_id",
                 "otp_logs.phone",
                 "otp_logs.otp",
-                "otp_logs.is_used as status",
                 "otp_logs.expires_at",
                 "otp_logs.created_at",
                 DB::raw("IF(otp_logs.is_used = '1','Yes','No') as status"),
-            ])->whereBetween("otp_logs.created_at", [$fdate, $tdate])
+            ])->when($fdate, fn ($q) => $q->where("otp_logs.created_at", ">=", $fdate))->when($tdate, fn ($q) => $q->where("otp_logs.created_at", "<=", $tdate))
                 ->orderBy("otp_logs.id", "desc")
                 ->get();
 
             return DataTables::of($table_data)
                 ->addIndexColumn()
+                ->addColumn("phone", function ($row) {
+                    return !empty($row->phone) ? $row->phone : "-";
+                })
+                ->addColumn("otp", function ($row) {
+                    return !empty($row->otp) ? $row->otp : "-";
+                })
+                ->addColumn("date", function ($row) {
+                    return !empty($row->created_at) ? date("d M Y", strtotime($row->created_at)) : "-";
+                })
+                ->addColumn("time", function ($row) {
+                    return !empty($row->created_at) ? date("h:i A", strtotime($row->created_at)) : "-";
+                })
                 ->rawColumns([])
                 ->make(true);
         }

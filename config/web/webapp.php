@@ -32,5 +32,6 @@ return [
     "invoice" => [
         "start_number" => 0,
         "digit_limit" => 6,
+        "sac_code" => "997159",
     ],
 ];

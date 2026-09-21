@@ -43,9 +43,10 @@ echo today()->format('Y-m-d'); @endphp" />
                     <tr>
                         <th>Index</th>
                         <th>Mobile</th>
-                        <th>OTP/Code</th>
+                        <th>OTP</th>
                         <th>Status</th>
                         <th>Date</th>
+                        <th>Time</th>
                     </tr>
                 </thead>
             </table>

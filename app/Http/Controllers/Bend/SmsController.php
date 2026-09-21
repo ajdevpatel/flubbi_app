@@ -20,16 +20,16 @@ class SmsController extends Controller
             return DataTables::of($table_data)
                 ->addIndexColumn()
                 ->addColumn("updated_at", function ($row) {
-                    return $row->updated_at;
+                    return !empty($row->updated_at) ? date("d M Y", strtotime($row->updated_at)) : "-";
                 })
-                ->addColumn("op_group", function ($row) {
-                    return $row->op_group;
+                ->addColumn("updated_time", function ($row) {
+                    return !empty($row->updated_at) ? date("h:i A", strtotime($row->updated_at)) : "-";
                 })
                 ->addColumn("op_label", function ($row) {
-                    return $row->op_label;
+                    return !empty($row->op_label) ? $row->op_label : "-";
                 })
                 ->addColumn("op_value", function ($row) {
-                    return $row->op_value;
+                    return !empty($row->op_value) ? $row->op_value : "-";
                 })
                 ->addColumn("edit", function ($row) {
                     return $this->getTableActionHtml([
@@ -38,7 +38,7 @@ class SmsController extends Controller
                         ])
                     ]);
                 })
-                ->rawColumns(["op_group", "op_label", "op_value", "edit"])
+                ->rawColumns(["edit"])
                 ->make(true);
         }
         return view('backend.smsMessageIndex');
@@ -71,29 +71,28 @@ class SmsController extends Controller
         if ($request->ajax()) {
             $fdate = $request->fdate;
             $tdate = $request->tdate;
-            $fdate = config("web.webapp.filter_from_date");
-            $tdate = config("web.webapp.filter_to_date");
-            if ($request->has("fdate") && !empty($request->fdate)) {
-                $fdate = $request->fdate;
-            }
-            if ($request->has("tdate") && !empty($request->tdate)) {
-                $tdate = $request->tdate . " 23:59:59";
-            }
-
-            $table_data = DB::table('remarketing_log')->whereBetween('rec_date', [$fdate, $tdate])->orderBy('id', 'desc')->get();
+            $fdate = $request->filled("fdate") ? date("Y-m-d 00:00:00", strtotime($request->fdate)) : null;
+            $tdate = $request->filled("tdate") ? date("Y-m-d 23:59:59", strtotime($request->tdate)) : null;
+            $table_data = DB::table('remarketing_log')
+                ->when($fdate, fn ($q) => $q->where('rec_date', '>=', $fdate))
+                ->when($tdate, fn ($q) => $q->where('rec_date', '<=', $tdate))
+                ->orderBy('id', 'desc')->get();
             return DataTables::of($table_data)
                 ->addIndexColumn()
                 ->addColumn("rec_date", function ($row) {
-                    return $row->rec_date;
+                    return !empty($row->rec_date) ? date("d M Y", strtotime($row->rec_date)) : "-";
+                })
+                ->addColumn("rec_time", function ($row) {
+                    return !empty($row->rec_date) ? date("h:i A", strtotime($row->rec_date)) : "-";
                 })
                 ->addColumn("cron_type", function ($row) {
-                    return $row->cron_type;
+                    return !empty($row->cron_type) ? ucfirst($row->cron_type) : "-";
                 })
                 ->addColumn("cronname", function ($row) {
-                    return $row->cronname;
+                    return !empty($row->cronname) ? $row->cronname : "-";
                 })
                 ->addColumn("msgcount", function ($row) {
-                    return $row->msgcount;
+                    return is_null($row->msgcount) ? "-" : $row->msgcount;
                 })
                 ->addColumn("details", function ($row) {
                     return $this->getTableActionHtml([
@@ -102,7 +101,7 @@ class SmsController extends Controller
                         ])
                     ]);
                 })
-                ->rawColumns(["rec_date", "cron_type", "cronname", "msgcount", "details"])
+                ->rawColumns(["details"])
                 ->make(true);
         }
         return view('backend.remarketingLogsIndex');

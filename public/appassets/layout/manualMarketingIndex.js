@@ -111,9 +111,10 @@ document.addEventListener("DOMContentLoaded", function() {
             columns: [
                 { data: "DT_RowIndex", name: "DT_RowIndex" },
                 { data: "phone", name: "phone" },
-                { data: "otp", name: "code" },
+                { data: "otp", name: "otp" },
                 { data: "status", name: "status" },
-                { data: "created_at", name: "created_at" },
+                { data: "date", name: "created_at" },
+                { data: "time", name: "created_at" }
             ],
             lengthMenu: window.lengthMenu,
             pageLength: 10,

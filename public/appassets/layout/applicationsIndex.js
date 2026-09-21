@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
             columns: [
                 { data: "DT_RowIndex", name: "DT_RowIndex" },
                 { data: "rec_date", name: "rec_date" },
+                { data: "rec_time", name: "rec_time" },
                 { data: "status", name: "status" },
                 { data: "u_name", name: "u_name" },
                 { data: "phone", name: "phone" },

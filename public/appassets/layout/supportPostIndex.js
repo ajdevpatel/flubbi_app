@@ -24,14 +24,16 @@ document.addEventListener("DOMContentLoaded", function() {
             },
             columns: [
                 { data: "DT_RowIndex", name: "DT_RowIndex" },
-                { data: "created_at", name: "created_at" },
-                { data: "ticket_no", name: "ticket_no" },
+                { data: "created_date", name: "created_date" },
+                { data: "created_time", name: "created_time" },
                 { data: "full_name", name: "full_name" },
                 { data: "mobile", name: "mobile" },
                 { data: "email", name: "email" },
                 { data: "reason_label", name: "reason_label" },
+                { data: "message", name: "message" },
+                { data: "ticket_no", name: "ticket_no" },
                 { data: "status", name: "status" },
-                { data: "action", name: "action" }
+                { data: "action", name: "action", orderable: false, searchable: false }
             ],
             lengthMenu: window.lengthMenu,
             pageLength: 10,

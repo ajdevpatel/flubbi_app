@@ -147,18 +147,20 @@
                 <div data-i18n="Page 2">Transactions</div>
             </a>
         </li>
-        <li class="menu-item @if ('transactions' == app('request')->input('menu_route')) active @endif">
-            <a href="{{ route('_transactionsIndex') }}" class="menu-link">
+        <li class="menu-item @if ('invoices' == app('request')->input('menu_route')) active @endif">
+            <a href="{{ route('_invoicesIndex') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-receipt"></i>
                 <div data-i18n="Page 2">Invoice</div>
             </a>
         </li>
+        {{--
         <li class="menu-item @if (in_array(app('request')->input('menu_route'), ['report-gst'])) active @endif">
             <a href="{{ route('_gstReportIndex') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-receipt-2"></i>
                 <div data-i18n="Page 2"> GST Report </div>
             </a>
         </li>
+        --}}
         <li class="menu-item @if (in_array(app('request')->input('menu_route'), ['remarketing-cycle'])) active @endif">
             <a href="{{ route('_remarketingCycleIndex') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-refresh"></i>

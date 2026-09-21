@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", function () {
             columns: [
                 { data: "DT_RowIndex", name: "DT_RowIndex" },
                 { data: "created_at", name: "created_at" },
+                { data: "created_time", name: "created_time" },
                 { data: "status", name: "status" },
                 { data: "full_name", name: "full_name" },
                 { data: "phone", name: "phone" },

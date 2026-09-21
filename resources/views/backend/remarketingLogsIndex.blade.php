@@ -40,6 +40,7 @@
                     <tr>
                         <th>Index</th>
                         <th>Date</th>
+                        <th>Time</th>
                         <th>Message For</th>
                         <th>Cron Name</th>
                         <th>Message Count</th>
@@ -94,6 +95,10 @@
                     {
                         data: "rec_date",
                         name: "rec_date"
+                    },
+                    {
+                        data: "rec_time",
+                        name: "rec_time"
                     },
                     {
                         data: "cron_type",

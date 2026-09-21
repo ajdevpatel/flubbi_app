@@ -12,6 +12,7 @@ use App\Http\Controllers\Bend\ApplicationsController;
 use App\Http\Controllers\Bend\SettingsController;
 use App\Http\Controllers\Bend\SupportController;
 use App\Http\Controllers\Bend\TransactionsController;
+use App\Http\Controllers\Bend\InvoiceController;
 use App\Http\Controllers\Bend\MarketingController;
 use App\Http\Controllers\Bend\ReportsController;
 use App\Http\Controllers\Bend\OurPartnersController;
@@ -107,6 +108,11 @@ Route::prefix(config("web.webapp.backend_slug"))->middleware(BendAuth::class)->g
     Route::controller(TransactionsController::class)->group(function () {
         Route::match(["get", "post"], "/transactions", "transactionsPostIndex")->name("_transactionsIndex");
         Route::match(["get", "post"], "/subscriptions", "subscriptionsPostIndex")->name("_subscriptionsIndex");
+    });
+
+    Route::controller(InvoiceController::class)->group(function () {
+        Route::match(["get", "post"], "/invoices", "invoicePostIndex")->name("_invoicesIndex");
+        Route::get("/invoices/{key}/download", "invoiceDownload")->where("key", "[0-9]+")->name("_invoiceDownload");
     });
 
     Route::controller(MarketingController::class)->group(function () {

@@ -18,15 +18,8 @@ class CustomersController extends Controller
         $login_type = $request->input('login_type', $login_type);
 
         if ($request->ajax()) {
-            $fdate = config("web.webapp.filter_from_date");
-            $tdate = config("web.webapp.filter_to_date");
-            if ($request->has("fdate") && !empty($request->fdate)) {
-                $fdate = $request->fdate;
-            }
-            if ($request->has("tdate") && !empty($request->tdate)) {
-                $tdate = $request->tdate . " 23:59:59";
-            }
-
+            $fdate = $request->filled("fdate") ? date("Y-m-d 00:00:00", strtotime($request->fdate)) : null;
+            $tdate = $request->filled("tdate") ? date("Y-m-d 23:59:59", strtotime($request->tdate)) : null;
             $query = DB::table("users")->select([
                 "users.uuid",
                 "users.name",
@@ -41,7 +34,8 @@ class CustomersController extends Controller
                 $join->on("states.id", "=", "users.state_id");
             })->where("users.role", "2")
                 ->whereNull("users.deleted_at")
-                ->whereBetween("users.created_at", [$fdate, $tdate]);
+                ->when($fdate, fn ($q) => $q->where("users.created_at", ">=", $fdate))
+                ->when($tdate, fn ($q) => $q->where("users.created_at", "<=", $tdate));
 
             if ($type && $type !== 'all') {
                 $typeMap = [
@@ -67,7 +61,10 @@ class CustomersController extends Controller
             return DataTables::of($table_data)
                 ->addIndexColumn()
                 ->addColumn("created_at", function ($row) {
-                    return $row->created_at;
+                    return $row->created_at ? "<b>" . date("d M Y", strtotime($row->created_at)) . "</b>" : "-";
+                })
+                ->addColumn("created_time", function ($row) {
+                    return $row->created_at ? date("h:i A", strtotime($row->created_at)) : "-";
                 })
                 ->addColumn("status", function ($row) {
                     return $this->getTableStatusHtml($row->status, [
@@ -77,22 +74,22 @@ class CustomersController extends Controller
                     ]);
                 })
                 ->addColumn("full_name", function ($row) {
-                    return "<b>" . ucfirst($row->name) . "</b>";
+                    return $row->name ? "<b>" . ucfirst($row->name) . "</b>" : "-";
                 })
                 ->addColumn("phone", function ($row) {
-                    return $row->phone;
+                    return $row->phone ?: "-";
                 })
                 ->addColumn("email", function ($row) {
-                    return $row->email;
+                    return $row->email ?: "-";
                 })
                 ->addColumn("state", function ($row) {
-                    return $row->state_name;
+                    return $row->state_name ?: "-";
                 })
                 ->addColumn("city", function ($row) {
-                    return $row->city;
+                    return $row->city ?: "-";
                 })
                 ->addColumn("pincode", function ($row) {
-                    return $row->pincode;
+                    return $row->pincode ?: "-";
                 })
                 ->addColumn("action", function ($row) {
                     return $this->getTableActionHtml([
@@ -104,7 +101,7 @@ class CustomersController extends Controller
                         ])
                     ]);
                 })
-                ->rawColumns(["status", "action", "phone", "city", "created_at", "full_name", "email", "state", "city", "pincode"])
+                ->rawColumns(["created_at", "status", "full_name", "action"])
                 ->make(true);
         }
         $type_name = $type;
@@ -314,7 +311,11 @@ class CustomersController extends Controller
 
     public function dndPostIndex(Request $request)
     {
-        // DND feature not available - columns is_dnd/dnd_at don't exist in current schema
+        if ($request->ajax()) {
+            return DataTables::of(collect([]))
+                ->addIndexColumn()
+                ->make(true);
+        }
         return view("backend.dndCustomersIndex");
     }
 
