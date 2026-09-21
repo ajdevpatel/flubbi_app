@@ -173,6 +173,12 @@
                 <div data-i18n="Page 2"> Remarketing Log </div>
             </a>
         </li>
+        <li class="menu-item @if (in_array(app('request')->input('menu_route'), ['dnd-customers', 'dnd-customer'])) active @endif">
+            <a href="{{ route('_dndCustomersIndex') }}" class="menu-link">
+                <i class="menu-icon tf-icons ti ti-lock-access-off"></i>
+                <div data-i18n="Page 2"> DND Customers </div>
+            </a>
+        </li>
         <li class="menu-item @if (in_array(app('request')->input('menu_route'), ['sms-message'])) active @endif">
             <a href="{{ route('_smsMessageIndex') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-message-circle-code"></i>
@@ -199,12 +205,6 @@
         </li>
         @php
             /*
-        <li class="menu-item @if (in_array(app('request')->input('menu_route'), ['dnd-customers', 'dnd-customer'])) active @endif">
-            <a href="{{ route('_dndCustomersIndex') }}" class="menu-link">
-                <i class="menu-icon tf-icons ti ti-lock-access-off"></i>
-                <div data-i18n="Page 2"> DND Customers </div>
-            </a>
-        </li>
         <li class="menu-item @if (in_array(app('request')->input('menu_route'), ['marketing-manual'])) active @endif">
             <a href="{{ route('_manualMarketingIndex') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-badge-ad"></i>
