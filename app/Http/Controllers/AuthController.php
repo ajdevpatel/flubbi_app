@@ -25,7 +25,8 @@ class AuthController extends Controller
                 "status" => "required",
             ]);
             $user_data = collect(DB::table("users")->select("users.id")->where("users.email", $request->input("loginKey"))
-                ->whereIn("users.role", [1])->first())->toArray();
+                ->whereIn("users.role", (array) config("web.webapp.admin_roles", [1]))
+                ->whereNull("users.deleted_at")->first())->toArray();
 
             if ([] == $user_data) {
                 return response()->json([

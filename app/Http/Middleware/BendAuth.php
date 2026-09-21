@@ -18,26 +18,24 @@ class BendAuth
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check() || !Auth::check() || !Auth::user() || null === Auth::id()) {
-            // User is not authenticated, redirect to the login page
-            if ($request->ajax()) {
-                return response()->json([
-                    "messages" => "Please log in to access this page.",
-                    "is_url" => route("_backendLogout"),
-                ]);
-            }
-            return redirect()->route("_backendLogout")->with("error", "Please log in to access this page.");
+        if (!Auth::check() || !Auth::user() || null === Auth::id()) {
+            return $this->reject($request);
         }
 
-        if (!in_array(Auth::user()->role, [1, 2, 3])) {
-            if ($request->ajax()) {
-                return response()->json([
-                    "messages" => "Please log in to access this page.",
-                    "is_url" => route("_backendLogout"),
-                ]);
-            }
-            return redirect()->route("_backendLogout")->with("error", "Please log in to access this page.");
+        $admin = DB::table("users")
+            ->select(["id", "role", "status"])
+            ->where("id", Auth::id())
+            ->whereIn("role", (array) config("web.webapp.admin_roles", [1]))
+            ->where("status", 1)
+            ->whereNull("deleted_at")
+            ->first();
+
+        if (null === $admin) {
+            Auth::logout();
+
+            return $this->reject($request);
         }
+
         date_default_timezone_set('Asia/Kolkata');
 
         #Add UUID Param
@@ -56,44 +54,17 @@ class BendAuth
         ]);
 
         return $next($request);
+    }
 
-        /*
-        $app_store_data = collect(DB::table("store_info")
-            ->select("store_info.*")
-            ->where("store_info.id", 1)
-            ->first())->toArray();
-
-        $app_store_tagline = config("web.webapp.env.app_name");
-        $app_store_logo = config("web.webapp.base_url") . "store/logo.webp";
-        $app_store_favicon = config("web.webapp.base_url") . "store/favicon.webp";
-        $app_store_p_logo = config("web.webapp.base_url") . "store/placeholder.webp";
-
-        if ([] !== $app_store_data) {
-            if (!empty($app_store_data["logo"]) && file_exists(public_path("uploads/store/" . $app_store_data["logo"]))) {
-                $app_store_logo = config("web.webapp.base_url") . "uploads/store/" . $app_store_data["logo"];
-            }
-            if (!empty($app_store_data["favicon"]) && file_exists(public_path("uploads/store/" . $app_store_data["favicon"]))) {
-                $app_store_favicon = config("web.webapp.base_url") . "uploads/store/" . $app_store_data["favicon"];
-            }
-            if (!empty($app_store_data["p_logo"]) && file_exists(public_path("uploads/store/" . $app_store_data["p_logo"]))) {
-                $app_store_p_logo = config("web.webapp.base_url") . "uploads/store/" . $app_store_data["p_logo"];
-            }
-            if (!empty($app_store_data["tagline"])) {
-                $app_store_tagline = $app_store_data["tagline"];
-            }
+    private function reject(Request $request): Response
+    {
+        if ($request->ajax()) {
+            return response()->json([
+                "messages" => "Please log in to access this page.",
+                "is_url" => route("_backendLogout"),
+            ]);
         }
 
-        $menu_route = explode("/", Route::current()->uri);
-
-        $request->merge([
-            "auth_name" => auth()->user()->name,
-            "app_store_logo" => $app_store_logo,
-            "app_store_favicon" => $app_store_favicon,
-            "app_store_p_logo" => $app_store_p_logo,
-            "app_store_tagline" => $app_store_tagline,
-            "menu_route" => (array_key_exists("1", $menu_route)) ? $menu_route[1] : $menu_route,
-        ]);
-
-        */
+        return redirect()->route("_backendLogout")->with("error", "Please log in to access this page.");
     }
 }

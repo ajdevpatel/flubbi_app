@@ -29,6 +29,8 @@ return [
     ],
     "filter_from_date" => date("Y-m-d", strtotime("-7 day", time())),
     "filter_to_date" => date("Y-m-d", strtotime("+1 day", time())),
+    "admin_roles" => [1],
+
     "invoice" => [
         "start_number" => 0,
         "digit_limit" => 6,
