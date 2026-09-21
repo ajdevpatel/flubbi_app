@@ -312,17 +312,99 @@ class CustomersController extends Controller
     public function dndPostIndex(Request $request)
     {
         if ($request->ajax()) {
-            return DataTables::of(collect([]))
+            $fdate = $request->filled("fdate") ? date("Y-m-d 00:00:00", strtotime($request->fdate)) : null;
+            $tdate = $request->filled("tdate") ? date("Y-m-d 23:59:59", strtotime($request->tdate)) : null;
+
+            $table_data = DB::table("users")
+                ->select(["users.uuid", "users.name", "users.phone", "users.email", "users.dnd_at"])
+                ->where("users.is_dnd", 1)
+                ->whereNull("users.deleted_at")
+                ->when($fdate, fn ($q) => $q->where("users.dnd_at", ">=", $fdate))
+                ->when($tdate, fn ($q) => $q->where("users.dnd_at", "<=", $tdate))
+                ->orderBy("users.dnd_at", "desc")
+                ->get();
+
+            return DataTables::of($table_data)
                 ->addIndexColumn()
+                ->addColumn("dnd_at", function ($row) {
+                    return !empty($row->dnd_at) ? date("d M Y", strtotime($row->dnd_at)) : "-";
+                })
+                ->addColumn("name", function ($row) {
+                    return !empty($row->name) ? ucwords($row->name) : "-";
+                })
+                ->addColumn("phone", function ($row) {
+                    return $row->phone ?: "-";
+                })
+                ->addColumn("email", function ($row) {
+                    return $row->email ?: "-";
+                })
+                ->addColumn("action", function ($row) {
+                    return $this->getTableActionHtml([
+                        "dnd_off" => route("_dndAddRemoveIndex", ["key" => $row->uuid]),
+                    ]);
+                })
+                ->rawColumns(["action"])
                 ->make(true);
         }
+
         return view("backend.dndCustomersIndex");
     }
 
     public function dndAddRemovePostIndex(string $id = null, Request $request)
     {
-        // DND feature not available - columns is_dnd/dnd_at don't exist in current schema
-        return redirect()->back()->with('error', 'DND feature is not available in the current version.');
+        if ("import-csv" === $id) {
+            Validator::make($request->all(), [
+                "dnd_csv" => "required|file|max:5120|mimetypes:text/plain,text/csv,application/csv,application/vnd.ms-excel",
+            ])->validate();
+
+            $phones = [];
+            $handle = fopen($request->file("dnd_csv")->getRealPath(), "r");
+            while (false !== ($row = fgetcsv($handle))) {
+                foreach ((array) $row as $cell) {
+                    $clean = preg_replace("/\D/", "", (string) $cell);
+                    if (10 === strlen($clean)) {
+                        $phones[$clean] = true;
+                    }
+                }
+            }
+            fclose($handle);
+            $phones = array_keys($phones);
+
+            if ([] === $phones) {
+                return response()->json([
+                    "errors" => ["message" => ["No valid 10 digit mobile number found in the file."]],
+                ], 422);
+            }
+
+            $updated = 0;
+            foreach (array_chunk($phones, 1000) as $chunk) {
+                $updated += DB::table("users")
+                    ->whereIn("phone", $chunk)
+                    ->where("is_dnd", 0)
+                    ->update([
+                        "is_dnd" => 1,
+                        "dnd_at" => $this->currentDataTime(),
+                        "updated_at" => $this->currentDataTime(),
+                    ]);
+            }
+
+            return response()->json([
+                "message" => $updated . " of " . count($phones) . " number(s) marked as DND.",
+            ], 200);
+        }
+
+        $user = DB::table("users")->where("uuid", $id)->first();
+        if (!$user) {
+            return redirect()->back()->with("error", "Customer not found.");
+        }
+
+        DB::table("users")->where("uuid", $id)->update([
+            "is_dnd" => 1 == $user->is_dnd ? 0 : 1,
+            "dnd_at" => 1 == $user->is_dnd ? null : $this->currentDataTime(),
+            "updated_at" => $this->currentDataTime(),
+        ]);
+
+        return redirect()->back();
     }
 
     public function postStore(Request $request)

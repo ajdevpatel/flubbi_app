@@ -116,11 +116,11 @@ class SmsController extends Controller
 
     public function remarketingCycleIndex()
     {
-        $sms_crondays = [0, 1, 2, 4, 7, 11, 15];
-        $whatsapp_crondays = [0, 1, 2, 3, 6, 10, 12, 16];
+        $sms_crondays = array_map("intval", array_keys((array) config("web.cron.slots.sms", [])));
+        $whatsapp_crondays = array_map("intval", array_keys((array) config("web.cron.slots.whatsapp", [])));
 
-        $maxSmsDay = max($sms_crondays);
-        $maxWhatsappDay = max($whatsapp_crondays);
+        $maxSmsDay = $sms_crondays ? max($sms_crondays) : 0;
+        $maxWhatsappDay = $whatsapp_crondays ? max($whatsapp_crondays) : 0;
         $maxDay = max($maxSmsDay, $maxWhatsappDay);
 
         $applications = DB::table('loan_applications')
@@ -137,6 +137,8 @@ class SmsController extends Controller
             ->where('loan_applications.payment_status', '0')
             ->where('users.status', '1')
             ->where('users.role', '2')
+            ->where('users.is_dnd', '0')
+            ->whereNull('users.deleted_at')
             ->groupBy('app_date')
             ->get()
             ->keyBy('app_date');

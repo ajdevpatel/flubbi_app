@@ -9,6 +9,10 @@ php artisan clear-compiled
 php artisan optimize
 
 
+* * * * * cd /path/to/flubbi_app && php artisan schedule:run >> /dev/null 2>&1
+
+
+
 
 http://127.0.0.1:8090/xxx?x=optimize:clear
 

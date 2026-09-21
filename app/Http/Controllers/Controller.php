@@ -245,6 +245,22 @@ abstract class Controller
                     </a>';
         }
 
+        if (array_key_exists("dnd_off", $url) && "" !== $url["dnd_off"]) {
+            $html .= '<a href="' . $url['dnd_off'] . '" title="Remove from DND">
+                        <button class="mx-1 btn btn-icon btn-label-success waves-effect">
+                            <span class="ti ti-bell-ringing"></span>
+                        </button>
+                    </a>';
+        }
+
+        if (array_key_exists("dnd_on", $url) && "" !== $url["dnd_on"]) {
+            $html .= '<a href="' . $url['dnd_on'] . '" title="Add to DND">
+                        <button class="mx-1 btn btn-icon btn-label-danger waves-effect">
+                            <span class="ti ti-bell-off"></span>
+                        </button>
+                    </a>';
+        }
+
         if (array_key_exists("invoice", $url) && "" !== $url["invoice"]) {
             $html .= '<a href="' . $url['invoice'] . '" title="Download Invoice">
                         <button class="mx-1 btn btn-icon btn-label-warning waves-effect">

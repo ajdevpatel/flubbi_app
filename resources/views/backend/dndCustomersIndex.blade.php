@@ -30,12 +30,10 @@
                         <div class="col-12">
                             <div class="input-group input-daterange" id="from-to-date">
                                 <input type="date" id="fdate_two" placeholder="MM/DD/YYYY" class="form-control"
-                                    value="@php
-echo today()->format('Y-m-d'); @endphp" />
+                                    value="" />
                                 <span class="input-group-text">To</span>
                                 <input type="date" id="tdate_two" placeholder="MM/DD/YYYY" class="form-control"
-                                    value="@php
-echo today()->format('Y-m-d'); @endphp" />
+                                    value="" />
                                 <button class="btn btn-primary me-sm-3 me-1 waves-effect waves-light"
                                     id="filter_btn_date">Apply</button>
                             </div>
@@ -74,7 +72,7 @@ echo today()->format('Y-m-d'); @endphp" />
         </div>
         <div class="mb-3">
             <label class="form-label" for="type"> DND User File </label>
-            <input type="file" name="dnd" class="form-control" />
+            <input type="file" name="dnd_csv" accept=".csv,text/csv" class="form-control" />
         </div>
         <div class="divider divider-dashed">
             <div class="divider-text"></div>
