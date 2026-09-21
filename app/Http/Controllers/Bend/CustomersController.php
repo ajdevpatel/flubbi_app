@@ -418,11 +418,13 @@ class CustomersController extends Controller
                 "city" => "required",
                 "state" => "required|numeric|exists:states,id",
                 "password" => "required|min:8",
-                "loan_types" => "required|exists:loan_types,id",
-                "loan_purposes" => "required|exists:loan_purposes,id",
+                "user_type" => "required|in:1,2",
+                "loan_types" => "required|exists:loan_types,id,status,1",
+                "loan_purposes" => "required|exists:loan_purposes,id,status,1",
+                "cibil_scores" => "required|exists:cibil_scores,id,status,1",
                 "loan_amount" => "required|numeric|min:1000",
                 "income" => "required|numeric|min:1000",
-                "emi_paying" => "required|numeric",
+                "emi_paying" => "required|numeric|min:0",
                 "emi_tenure" => "required|in:12,24,36,48,60,72",
             ])->validate();
 
@@ -439,29 +441,35 @@ class CustomersController extends Controller
                     "email" => $request->mail,
                     "city" => $request->city,
                     "state_id" => $request->state,
-                    "role" => "4",
-                    "status" => "1",
+                    "role" => 2,
+                    "status" => 1,
+                    "mobile_verified_at" => $created_at,
                     "created_at" => $created_at,
+                    "updated_at" => $created_at,
                 ]);
 
-                $application_id = DB::table("loan_applications")->insertGetId([
+                DB::table("loan_applications")->insert([
                     "user_id" => $user_id,
                     "loan_type_id" => $request->loan_types,
                     "loan_purpose_id" => $request->loan_purposes,
+                    "application_no" => $this->newApplicationNo(),
                     "name" => $request->name,
                     "email" => $request->mail,
                     "state_id" => $request->state,
                     "city" => $request->city,
                     "pincode" => $request->pincode,
-                    "employment_type" => $request->user_type ?? 1,
+                    "employment_type" => 2 == (int) $request->user_type ? "self_employed" : "salaried",
                     "monthly_income" => $request->income,
                     "existing_emi" => $request->emi_paying,
-                    "cibil_scores" => $request->cibil_scores ?? 0,
+                    "cibil_score" => (int) $request->cibil_scores,
                     "tenure_months" => $request->emi_tenure,
                     "eligible_amount" => $request->loan_amount,
-                    "status" => "2",
+                    "eligibility_status" => "eligible",
+                    "status" => 2,
+                    "step" => 8,
                     "applied_at" => $created_at,
                     "created_at" => $created_at,
+                    "updated_at" => $created_at,
                 ]);
 
                 $this->sendUserCredentials($user_id, $request->password);

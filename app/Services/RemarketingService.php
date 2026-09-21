@@ -52,12 +52,12 @@ class RemarketingService
     {
         $template = $this->messageTemplate();
         if ("" === $template) {
-            return $this->finish("sms", $day, 0, "skipped - remarketing_sms option is empty");
+            return $this->finish("sms", $day, [], "skipped - remarketing_sms option is empty");
         }
 
         $templateId = (string) config("web.cron.sms.template_id", "");
         if ("" === $templateId) {
-            return $this->finish("sms", $day, 0, "skipped - SMS_REMARKETING_TEMPLATE_ID is not set");
+            return $this->finish("sms", $day, [], "skipped - SMS_REMARKETING_TEMPLATE_ID is not set");
         }
 
         $targets = [];
@@ -68,19 +68,19 @@ class RemarketingService
             $targets[$phone] = $this->fillTemplate($template, (float) config("web.cron.default_eligible_amount", 500000));
         }
 
-        $response = "";
+        $results = [];
         foreach ($targets as $phone => $message) {
-            $response .= $phone . "-" . $this->postSms($phone, $message, $templateId) . "|";
+            $results[$phone] = $this->postSms($phone, $message, $templateId);
         }
 
-        return $this->finish("sms", $day, count($targets), $response);
+        return $this->finish("sms", $day, $results);
     }
 
     public function sendWhatsappBatch(int $day): array
     {
         $cfg = config("web.cron.whatsapp", []);
         if (empty($cfg["api_key"]) || empty($cfg["campaign_name"])) {
-            return $this->finish("whatsapp", $day, 0, "skipped - AISENSY_KEY or AISENSY_CAMPAIGN is not set");
+            return $this->finish("whatsapp", $day, [], "skipped - AISENSY_KEY or AISENSY_CAMPAIGN is not set");
         }
 
         $targets = [];
@@ -97,29 +97,43 @@ class RemarketingService
             ];
         }
 
-        $response = "";
+        $results = [];
         foreach ($targets as $phone => $target) {
-            $response .= $phone . "-" . $this->postWhatsapp($phone, $target["name"], $target["amount"], $cfg) . "|";
+            $results[$phone] = $this->postWhatsapp($phone, $target["name"], $target["amount"], $cfg);
         }
 
-        return $this->finish("whatsapp", $day, count($targets), $response);
+        return $this->finish("whatsapp", $day, $results);
     }
 
-    private function finish(string $type, int $day, int $count, string $response): array
+    private function finish(string $type, int $day, array $results, string $note = ""): array
     {
         $name = $type . "-" . $day;
+        $sent = 0;
+        $lines = [];
+
+        foreach ($results as $phone => [$ok, $text]) {
+            if ($ok) {
+                ++$sent;
+            }
+            $lines[] = $phone . "-" . ($ok ? "" : "FAILED ") . $text;
+        }
+
+        $attempted = count($results);
+        $response = "" !== $note
+            ? $note
+            : "ok=" . $sent . " fail=" . ($attempted - $sent) . "|" . implode("|", $lines) . "|";
 
         DB::table("remarketing_log")->insert([
             "rec_date" => now(),
             "cron_type" => $type,
             "cronname" => $name,
-            "msgcount" => $count,
+            "msgcount" => $sent,
             "msgresponse" => $response,
         ]);
 
-        Log::info("remarketing cron " . $name . " sent to " . $count . " number(s)");
+        Log::info("remarketing cron " . $name . " sent " . $sent . " of " . $attempted . ("" !== $note ? " (" . $note . ")" : ""));
 
-        return ["name" => $name, "count" => $count, "response" => $response];
+        return ["name" => $name, "count" => $sent, "attempted" => $attempted, "response" => $response];
     }
 
     private function messageTemplate(): string
@@ -202,7 +216,7 @@ class RemarketingService
         return $rest . "," . $last;
     }
 
-    private function postSms(string $phone, string $message, string $templateId): string
+    private function postSms(string $phone, string $message, string $templateId): array
     {
         $cfg = config("web.sms.greensms", []);
 
@@ -218,10 +232,18 @@ class RemarketingService
             "TemplateID" => $templateId,
         ];
 
-        return $this->curl((string) ($cfg["uri"] ?? ""), $payload, false);
+        [$ok, $body] = $this->curl((string) ($cfg["uri"] ?? ""), $payload, false);
+        if (!$ok) {
+            return [false, $body];
+        }
+
+        $decoded = json_decode($body, true);
+        $accepted = is_array($decoded) && isset($decoded["status"]) && "success" === strtolower((string) $decoded["status"]);
+
+        return [$accepted, $body];
     }
 
-    private function postWhatsapp(string $phone, string $name, float $amount, array $cfg): string
+    private function postWhatsapp(string $phone, string $name, float $amount, array $cfg): array
     {
         $formatted = $this->indianFormat($amount);
 
@@ -239,13 +261,22 @@ class RemarketingService
             $payload["media"] = $cfg["media"];
         }
 
-        return $this->curl((string) $cfg["api_url"], $payload, true);
+        [$ok, $body] = $this->curl((string) $cfg["api_url"], $payload, true);
+        if (!$ok) {
+            return [false, $body];
+        }
+
+        $decoded = json_decode($body, true);
+        $rejected = is_array($decoded) && (isset($decoded["errorCode"]) || isset($decoded["errorMessage"])
+            || (isset($decoded["success"]) && !filter_var($decoded["success"], FILTER_VALIDATE_BOOLEAN)));
+
+        return [!$rejected, $body];
     }
 
-    private function curl(string $url, array $payload, bool $json): string
+    private function curl(string $url, array $payload, bool $json): array
     {
         if ("" === $url) {
-            return "no endpoint configured";
+            return [false, "no endpoint configured"];
         }
 
         $curl = curl_init($url);
@@ -261,14 +292,22 @@ class RemarketingService
 
         $response = curl_exec($curl);
         $error = curl_error($curl);
+        $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
         curl_close($curl);
 
         if (false === $response || "" !== $error) {
             Log::warning("remarketing gateway error", ["url" => $url, "error" => $error]);
 
-            return "gateway error: " . ("" !== $error ? $error : "empty response");
+            return [false, "gateway error: " . ("" !== $error ? $error : "empty response")];
         }
 
-        return trim(preg_replace("/\s+/", " ", (string) $response));
+        $body = trim(preg_replace("/\s+/", " ", (string) $response));
+        if ($status < 200 || $status >= 300) {
+            Log::warning("remarketing gateway rejected", ["url" => $url, "http" => $status, "body" => substr($body, 0, 300)]);
+
+            return [false, "HTTP " . $status . " " . $body];
+        }
+
+        return [true, $body];
     }
 }

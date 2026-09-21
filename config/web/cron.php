@@ -1,6 +1,8 @@
 <?php
 
 return [
+    "timezone" => "Asia/Kolkata",
+
     "enabled" => [
         "sms" => 1,
         "whatsapp" => 1,

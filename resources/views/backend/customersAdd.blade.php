@@ -102,8 +102,7 @@
                                 <select name="loan_types" class="form-select" data-allow-clear="true">
                                     <option value="">Loan Type</option>
                                     @foreach ($loan_type_index as $k => $v)
-                                        <option value="{{ $v->id }}">{{ Str::ucfirst($v->label) }} -
-                                            {{ $v->s_price }}</option>
+                                        <option value="{{ $v->id }}">{{ Str::ucfirst($v->label) }}</option>
                                     @endforeach
                                 </select>
                             </div>

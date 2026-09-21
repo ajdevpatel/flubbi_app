@@ -86,6 +86,10 @@ document.addEventListener("DOMContentLoaded", function () {
             buttons: window.ex_button,
         });
 
+        $(document).on("click", "#filter_btn_date", function (e) {
+            ajax_dnd_datatables.ajax.reload(null, true);
+        });
+
         $("#dndActionModule").validate({
             rules: {
                 dnd_csv: {

@@ -230,15 +230,6 @@ class LoanServiceController extends Controller
         return $loan && (1 == (int) $loan->payment_status || 1 != (int) $loan->status);
     }
 
-    public function newApplicationNo(): string
-    {
-        do {
-            $no = "LN-" . now()->format("Ymd") . "-" . strtoupper(Str::random(6));
-        } while (DB::table("loan_applications")->where("application_no", $no)->exists());
-
-        return $no;
-    }
-
     public function stepView(Request $request, string $step, array $data = [])
     {
         $service = $this->service($request);

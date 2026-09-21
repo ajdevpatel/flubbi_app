@@ -17,7 +17,7 @@ abstract class Controller
     public function currentDataTime(): string
     {
         $now = new DateTime();
-        return $now->format("Y-m-d h:i:s");
+        return $now->format("Y-m-d H:i:s");
     }
 
     public function setCookie(string $c_name = "", string $c_value = "", int $c_time = 3600)
@@ -39,6 +39,15 @@ abstract class Controller
     public function generateUUID(): string
     {
         return strtolower(str::uuid()->toString());
+    }
+
+    public function newApplicationNo(): string
+    {
+        do {
+            $no = "LN-" . now()->format("Ymd") . "-" . strtoupper(Str::random(6));
+        } while (DB::table("loan_applications")->where("application_no", $no)->exists());
+
+        return $no;
     }
 
     public function generatePassword($chars = 10): string
