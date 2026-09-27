@@ -48,7 +48,10 @@ return [
         "body_params" => ["name", "application_no", "amount"],
     ],
 
-    "test_numbers" => [],
+    "test_numbers" => [
+        "8866231236",
+        "8530241214",
+    ],
 
     "default_eligible_amount" => 500000,
     "timeout_seconds" => 20,
