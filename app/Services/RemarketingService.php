@@ -13,6 +13,7 @@ class RemarketingService
 
         $rows = DB::table("loan_applications")
             ->join("users", "users.id", "=", "loan_applications.user_id")
+            ->leftJoin("loan_types", "loan_types.id", "=", "loan_applications.loan_type_id")
             ->select([
                 "users.id as user_id",
                 "users.name",
@@ -21,6 +22,7 @@ class RemarketingService
                 "loan_applications.monthly_income",
                 "loan_applications.existing_emi",
                 "loan_applications.eligible_amount",
+                "loan_types.label as loan_type",
             ])
             ->where("loan_applications.login_type", "self")
             ->where("loan_applications.payment_status", 0)
@@ -79,27 +81,32 @@ class RemarketingService
     public function sendWhatsappBatch(int $day): array
     {
         $cfg = config("web.cron.whatsapp", []);
-        if (empty($cfg["api_key"]) || empty($cfg["campaign_name"])) {
-            return $this->finish("whatsapp", $day, [], "skipped - AISENSY_KEY or AISENSY_CAMPAIGN is not set");
+        if (empty($cfg["api_url"]) || empty($cfg["api_key"]) || empty($cfg["media_url"])) {
+            return $this->finish("whatsapp", $day, [], "skipped - WBBOX_API_URL, WBBOX_API_KEY or WBBOX_MEDIA_URL is not set");
+        }
+        if ("unified" === strtolower((string) ($cfg["mode"] ?? "meta")) && empty($cfg["from"])) {
+            return $this->finish("whatsapp", $day, [], "skipped - WBBOX_MODE=unified needs WBBOX_FROM (phone number id)");
         }
 
         $targets = [];
         foreach ($this->audience($day) as $row) {
-            $targets[$row->phone] = [
-                "name" => $row->name ? ucwords((string) $row->name) : "Customer",
-                "amount" => $this->eligibleAmount($row),
-            ];
+            $targets[$row->phone] = $row;
         }
         foreach ($this->testNumbers() as $phone) {
-            $targets[$phone] = [
+            $targets[$phone] = (object) [
                 "name" => "Flubbi Test",
-                "amount" => (float) config("web.cron.default_eligible_amount", 500000),
+                "phone" => $phone,
+                "application_no" => "TEST",
+                "loan_type" => "Personal Loan",
+                "eligible_amount" => (float) config("web.cron.default_eligible_amount", 500000),
+                "monthly_income" => 0,
+                "existing_emi" => 0,
             ];
         }
 
         $results = [];
-        foreach ($targets as $phone => $target) {
-            $results[$phone] = $this->postWhatsapp($phone, $target["name"], $target["amount"], $cfg);
+        foreach ($targets as $phone => $row) {
+            $results[$phone] = $this->postWhatsapp($row, $day, $cfg);
         }
 
         return $this->finish("whatsapp", $day, $results);
@@ -173,34 +180,8 @@ class RemarketingService
     private function eligibleAmount(object $row): float
     {
         $amount = (float) ($row->eligible_amount ?? 0);
-        if ($amount > 0) {
-            return $amount;
-        }
 
-        $income = (float) ($row->monthly_income ?? 0);
-        $emi = (float) ($row->existing_emi ?? 0);
-        $rate = (float) config("web.cron.fallback_interest_rate", 12.5);
-        $default = (float) config("web.cron.default_eligible_amount", 500000);
-
-        if ($income <= 0) {
-            return $default;
-        }
-
-        $capacity = floor(($income * 0.40) - $emi);
-        $monthly = floor(($default + ($default * ($rate / 100)) * 6) / 72);
-        if ($capacity <= 0 || $monthly <= 0) {
-            return $default;
-        }
-
-        $amount = floor(($default * $capacity) / $monthly);
-        if ($amount < 200000) {
-            return 195000;
-        }
-        if ($amount > 850000) {
-            return 875000;
-        }
-
-        return round($amount);
+        return $amount > 0 ? $amount : (float) config("web.cron.default_eligible_amount", 500000);
     }
 
     private function indianFormat(float $amount): string
@@ -243,37 +224,100 @@ class RemarketingService
         return [$accepted, $body];
     }
 
-    private function postWhatsapp(string $phone, string $name, float $amount, array $cfg): array
+    private function bodyParams(object $row): array
     {
-        $formatted = $this->indianFormat($amount);
-
-        $payload = [
-            "apiKey" => $cfg["api_key"],
-            "campaignName" => $cfg["campaign_name"],
-            "destination" => "91" . $phone,
-            "userName" => $name,
-            "templateParams" => [$name, $formatted],
-            "tags" => (array) ($cfg["tags"] ?? []),
-            "attributes" => ["eligibleAmount" => $formatted],
-        ];
-
-        if (!empty($cfg["media"]["url"])) {
-            $payload["media"] = $cfg["media"];
+        $values = [];
+        foreach ((array) config("web.cron.whatsapp.body_params", ["name", "application_no", "amount"]) as $token) {
+            $token = (string) $token;
+            if (0 === strpos($token, "text:")) {
+                $values[] = substr($token, 5);
+                continue;
+            }
+            $values[] = match ($token) {
+                "name" => !empty($row->name) ? ucwords((string) $row->name) : "Customer",
+                "amount" => $this->indianFormat($this->eligibleAmount($row)),
+                "loan_type" => !empty($row->loan_type) ? (string) $row->loan_type : "Loan",
+                "application_no" => !empty($row->application_no) ? (string) $row->application_no : "-",
+                "phone" => (string) $row->phone,
+                default => "",
+            };
         }
 
-        [$ok, $body] = $this->curl((string) $cfg["api_url"], $payload, true);
+        return $values;
+    }
+
+    private function postWhatsapp(object $row, int $day, array $cfg): array
+    {
+        $to = "91" . $row->phone;
+        $media = trim((string) $cfg["media_url"]);
+
+        $meta = [
+            "messaging_product" => "whatsapp",
+            "recipient_type" => "individual",
+            "to" => $to,
+            "type" => "template",
+            "template" => [
+                "name" => (string) $cfg["template"],
+                "language" => ["code" => (string) (!empty($cfg["language"]) ? $cfg["language"] : "en")],
+                "components" => [
+                    [
+                        "type" => "header",
+                        "parameters" => [
+                            ["type" => "image", "image" => ctype_digit($media) ? ["id" => $media] : ["link" => $media]],
+                        ],
+                    ],
+                    [
+                        "type" => "body",
+                        "parameters" => array_map(
+                            fn (string $text) => ["type" => "text", "text" => $text],
+                            $this->bodyParams($row)
+                        ),
+                    ],
+                ],
+            ],
+            "biz_opaque_callback_data" => "whatsapp-" . $day . ":" . (!empty($row->application_no) ? $row->application_no : $row->phone),
+        ];
+
+        if ("unified" === strtolower((string) ($cfg["mode"] ?? "meta"))) {
+            unset($meta["to"]);
+            $payload = [
+                "channel" => "WhatsApp",
+                "to" => [$to],
+                "from" => (string) $cfg["from"],
+                "content" => ["data" => ["templatepayload" => $meta]],
+            ];
+        } else {
+            $payload = $meta;
+        }
+
+        $headerName = !empty($cfg["auth_header"]) ? (string) $cfg["auth_header"] : "Authorization";
+        $headerValue = "authorization" === strtolower($headerName)
+            ? "Bearer " . $cfg["api_key"]
+            : (string) $cfg["api_key"];
+
+        [$ok, $body] = $this->curl((string) $cfg["api_url"], $payload, true, [$headerName . ": " . $headerValue]);
         if (!$ok) {
             return [false, $body];
         }
 
         $decoded = json_decode($body, true);
-        $rejected = is_array($decoded) && (isset($decoded["errorCode"]) || isset($decoded["errorMessage"])
-            || (isset($decoded["success"]) && !filter_var($decoded["success"], FILTER_VALIDATE_BOOLEAN)));
+        $rejected = false;
+        if (is_array($decoded)) {
+            if (isset($decoded["error"])) {
+                $rejected = true;
+            } elseif (array_key_exists("status", $decoded) && !is_array($decoded["status"])) {
+                $accepted = filter_var($decoded["status"], FILTER_VALIDATE_BOOLEAN)
+                    || in_array(strtolower((string) $decoded["status"]), ["success", "sent", "queued", "submitted", "accepted", "ok"], true);
+                $rejected = !$accepted;
+            } elseif (array_key_exists("success", $decoded)) {
+                $rejected = !filter_var($decoded["success"], FILTER_VALIDATE_BOOLEAN);
+            }
+        }
 
         return [!$rejected, $body];
     }
 
-    private function curl(string $url, array $payload, bool $json): array
+    private function curl(string $url, array $payload, bool $json, array $headers = []): array
     {
         if ("" === $url) {
             return [false, "no endpoint configured"];
@@ -283,11 +327,11 @@ class RemarketingService
         curl_setopt_array($curl, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $json ? json_encode($payload) : $payload,
+            CURLOPT_POSTFIELDS => $json ? json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : $payload,
             CURLOPT_TIMEOUT => (int) config("web.cron.timeout_seconds", 20),
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_HTTPHEADER => $json ? ["Content-Type: application/json"] : [],
+            CURLOPT_HTTPHEADER => array_merge($json ? ["Content-Type: application/json", "Accept: application/json"] : [], $headers),
         ]);
 
         $response = curl_exec($curl);

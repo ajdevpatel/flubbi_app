@@ -12,6 +12,7 @@ php artisan optimize
 * * * * * cd /path/to/flubbi_app && php artisan schedule:run >> /dev/null 2>&1
 
 
+4e5f9d4b-b8a3-4108-a1b3-368213aa1e74
 
 
 http://127.0.0.1:8090/xxx?x=optimize:clear

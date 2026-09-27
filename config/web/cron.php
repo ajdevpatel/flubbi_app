@@ -4,8 +4,8 @@ return [
     "timezone" => "Asia/Kolkata",
 
     "enabled" => [
-        "sms" => 1,
-        "whatsapp" => 1,
+        "sms" => (int) env("CRON_SMS_ENABLED", 1),
+        "whatsapp" => (int) env("CRON_WHATSAPP_ENABLED", 1),
     ],
 
     "slots" => [
@@ -37,19 +37,19 @@ return [
     ],
 
     "whatsapp" => [
-        "api_url" => "https://backend.aisensy.com/campaign/t1/api/v2",
-        "api_key" => env("AISENSY_KEY", ""),
-        "campaign_name" => env("AISENSY_CAMPAIGN", ""),
-        "tags" => ["Get Offer"],
-        "media" => [
-            "url" => env("AISENSY_MEDIA_URL", ""),
-            "filename" => env("AISENSY_MEDIA_FILE", ""),
-        ],
+        "api_url" => env("WBBOX_API_URL", ""),
+        "mode" => env("WBBOX_MODE", "meta"),
+        "from" => env("WBBOX_FROM", ""),
+        "api_key" => env("WBBOX_API_KEY", ""),
+        "auth_header" => env("WBBOX_AUTH_HEADER", "Authorization"),
+        "template" => env("WBBOX_TEMPLATE", "loan_offer_generated_remarks"),
+        "language" => env("WBBOX_LANGUAGE", "en"),
+        "media_url" => env("WBBOX_MEDIA_URL", ""),
+        "body_params" => ["name", "application_no", "amount"],
     ],
 
     "test_numbers" => [],
 
     "default_eligible_amount" => 500000,
-    "fallback_interest_rate" => 12.5,
     "timeout_seconds" => 20,
 ];
