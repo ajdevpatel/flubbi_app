@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Bend;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Services\RemarketingService;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -116,56 +117,30 @@ class SmsController extends Controller
 
     public function remarketingCycleIndex()
     {
-        $sms_crondays = array_map("intval", array_keys((array) config("web.cron.slots.sms", [])));
-        $whatsapp_crondays = array_map("intval", array_keys((array) config("web.cron.slots.whatsapp", [])));
+        $service = new RemarketingService();
+        $channels = [];
 
-        $maxSmsDay = $sms_crondays ? max($sms_crondays) : 0;
-        $maxWhatsappDay = $whatsapp_crondays ? max($whatsapp_crondays) : 0;
-        $maxDay = max($maxSmsDay, $maxWhatsappDay);
+        foreach (["whatsapp" => "WhatsApp", "sms" => "SMS"] as $channel => $label) {
+            $buckets = [];
+            foreach ($service->schedule($channel) as $bucket) {
+                $day = $bucket["day"];
+                $buckets[] = [
+                    "day" => $day,
+                    "udate" => Carbon::now()->subDays($day)->format("d-m-Y"),
+                    "times" => $bucket["times"],
+                    "customers" => count($service->audience($day)),
+                    "today" => $service->todayRuns($channel, $day),
+                ];
+            }
 
-        $applications = DB::table('loan_applications')
-            ->join('users', 'users.id', '=', 'loan_applications.user_id')
-            ->selectRaw('
-            DATE(loan_applications.applied_at) as app_date,
-            COUNT(*) as total_applications
-        ')
-            ->whereBetween('loan_applications.applied_at', [
-                Carbon::now()->subDays($maxDay)->startOfDay(),
-                Carbon::now()->endOfDay()
-            ])
-            ->where('loan_applications.login_type', 'self')
-            ->where('loan_applications.payment_status', '0')
-            ->where('users.status', '1')
-            ->where('users.role', '2')
-            ->where('users.is_dnd', '0')
-            ->whereNull('users.deleted_at')
-            ->groupBy('app_date')
-            ->get()
-            ->keyBy('app_date');
-
-        $sms_data = [];
-        foreach ($sms_crondays as $day) {
-            $date = Carbon::now()->subDays($day)->toDateString();
-            $sms_data[] = [
-                'day' => $day,
-                'udate' => Carbon::parse($date)->format('d-m-Y'),
-                'applications' => $applications[$date]->total_applications ?? 0
+            $channels[] = [
+                "key" => $channel,
+                "label" => $label,
+                "status" => $service->channelStatus($channel),
+                "buckets" => $buckets,
             ];
         }
 
-        $whatsapp_data = [];
-        foreach ($whatsapp_crondays as $day) {
-            $date = Carbon::now()->subDays($day)->toDateString();
-            $whatsapp_data[] = [
-                'day' => $day,
-                'udate' => Carbon::parse($date)->format('d-m-Y'),
-                'applications' => $applications[$date]->total_applications ?? 0
-            ];
-        }
-
-        return view('backend.remarketingCycleIndex', [
-            'sms_data' => $sms_data,
-            'whatsapp_data' => $whatsapp_data
-        ]);
+        return view("backend.remarketingCycleIndex", ["channels" => $channels]);
     }
 }

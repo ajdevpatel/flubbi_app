@@ -24,8 +24,8 @@ class RemarketingService
                 "loan_applications.eligible_amount",
                 "loan_types.label as loan_type",
             ])
-            ->where("loan_applications.login_type", "self")
             ->where("loan_applications.payment_status", 0)
+            ->whereNotIn("loan_applications.status", [4, 6])
             ->where("users.status", 1)
             ->where("users.role", 2)
             ->where("users.is_dnd", 0)
@@ -48,6 +48,72 @@ class RemarketingService
         }
 
         return array_values($unique);
+    }
+
+    public function schedule(string $channel): array
+    {
+        $buckets = [];
+        foreach ((array) config("web.cron.slots." . $channel, []) as $day => $expressions) {
+            $times = [];
+            foreach ((array) $expressions as $expression) {
+                $parts = preg_split("/\s+/", trim((string) $expression)) ?: [];
+                $times[] = (5 === count($parts) && ctype_digit($parts[0]) && ctype_digit($parts[1]))
+                    ? sprintf("%02d:%02d", (int) $parts[1], (int) $parts[0])
+                    : (string) $expression;
+            }
+            sort($times);
+            $buckets[] = ["day" => (int) $day, "times" => $times];
+        }
+
+        return $buckets;
+    }
+
+    public function todayRuns(string $channel, int $day): array
+    {
+        $rows = DB::table("remarketing_log")
+            ->where("cron_type", $channel)
+            ->where("cronname", $channel . "-" . $day)
+            ->whereDate("rec_date", now()->toDateString())
+            ->orderByDesc("id")
+            ->get(["msgcount", "msgresponse", "rec_date"]);
+
+        $last = $rows->first();
+        $summary = "";
+        if ($last) {
+            $summary = date("H:i", strtotime((string) $last->rec_date)) . " " . explode("|", (string) $last->msgresponse, 2)[0];
+        }
+
+        return [
+            "runs" => $rows->count(),
+            "sent" => (int) $rows->sum("msgcount"),
+            "last" => trim($summary),
+        ];
+    }
+
+    public function channelStatus(string $channel): array
+    {
+        $enabled = 1 === (int) config("web.cron.enabled." . $channel, 0);
+
+        if ("sms" === $channel) {
+            $configured = "" !== trim((string) config("web.cron.sms.template_id", ""));
+            $reason = $configured ? "" : "SMS_REMARKETING_TEMPLATE_ID not set";
+        } else {
+            $cfg = (array) config("web.cron.whatsapp", []);
+            $configured = !empty($cfg["api_url"]) && !empty($cfg["api_key"]) && !empty($cfg["media_url"]);
+            $reason = $configured ? "" : "WBBOX_API_URL, WBBOX_API_KEY or WBBOX_MEDIA_URL not set";
+        }
+
+        if (!$enabled) {
+            $reason = "CRON_" . strtoupper($channel) . "_ENABLED=0";
+        }
+
+        return [
+            "enabled" => $enabled,
+            "configured" => $configured,
+            "live" => $enabled && $configured,
+            "reason" => $reason,
+            "test_numbers" => count($this->testNumbers()),
+        ];
     }
 
     public function sendSmsBatch(int $day): array
