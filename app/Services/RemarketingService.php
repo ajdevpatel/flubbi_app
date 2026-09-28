@@ -68,32 +68,6 @@ class RemarketingService
         return $buckets;
     }
 
-    public function channelStatus(string $channel): array
-    {
-        $enabled = 1 === (int) config("web.cron.enabled." . $channel, 0);
-
-        if ("sms" === $channel) {
-            $configured = "" !== trim((string) config("web.cron.sms.template_id", ""));
-            $reason = $configured ? "" : "SMS_REMARKETING_TEMPLATE_ID not set";
-        } else {
-            $cfg = (array) config("web.cron.whatsapp", []);
-            $configured = !empty($cfg["api_url"]) && !empty($cfg["api_key"]) && !empty($cfg["media_url"]);
-            $reason = $configured ? "" : "WBBOX_API_URL, WBBOX_API_KEY or WBBOX_MEDIA_URL not set";
-        }
-
-        if (!$enabled) {
-            $reason = "CRON_" . strtoupper($channel) . "_ENABLED=0";
-        }
-
-        return [
-            "enabled" => $enabled,
-            "configured" => $configured,
-            "live" => $enabled && $configured,
-            "reason" => $reason,
-            "test_numbers" => count($this->testNumbers()),
-        ];
-    }
-
     public function sendSmsBatch(int $day): array
     {
         $template = $this->messageTemplate();

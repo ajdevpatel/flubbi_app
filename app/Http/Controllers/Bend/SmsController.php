@@ -134,7 +134,6 @@ class SmsController extends Controller
             $channels[] = [
                 "key" => $channel,
                 "label" => $label,
-                "status" => $service->channelStatus($channel),
                 "buckets" => $buckets,
             ];
         }

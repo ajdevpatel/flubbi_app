@@ -7,7 +7,7 @@
             <div class="d-flex flex-column justify-content-center">
                 <h4 class="mb-1 mt-3">Remarketing Cycle</h4>
                 <p class="text-muted mb-0">Each card is one cron bucket. The number is how many customers will get a
-                    message when that bucket runs today, exactly as the cron counts them. Times are IST.</p>
+                    message when that bucket runs today, exactly as the cron counts them.</p>
             </div>
         </div>
     </div>
@@ -16,25 +16,13 @@
         @php
             $color = 'whatsapp' === $channel['key'] ? 'success' : 'info';
             $icon = 'whatsapp' === $channel['key'] ? 'ti-brand-whatsapp' : 'ti-message-circle';
-            $status = $channel['status'];
         @endphp
         <div class="card mb-4">
-            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="card-header">
                 <h5 class="card-title mb-0">
                     <span class="badge bg-label-{{ $color }}"><i class="ti {{ $icon }} me-1"></i>{{ $channel['label'] }}</span>
                     Remarketing
                 </h5>
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                    @if ($status['live'])
-                        <span class="badge bg-success">Cron ON</span>
-                    @else
-                        <span class="badge bg-danger">Cron OFF</span>
-                        <small class="text-muted">{{ $status['reason'] }}</small>
-                    @endif
-                    @if ($status['test_numbers'] > 0)
-                        <span class="badge bg-label-warning">+{{ $status['test_numbers'] }} test number(s) on every run</span>
-                    @endif
-                </div>
             </div>
             <div class="card-body">
                 <div class="row">
