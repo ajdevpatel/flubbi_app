@@ -68,28 +68,6 @@ class RemarketingService
         return $buckets;
     }
 
-    public function todayRuns(string $channel, int $day): array
-    {
-        $rows = DB::table("remarketing_log")
-            ->where("cron_type", $channel)
-            ->where("cronname", $channel . "-" . $day)
-            ->whereDate("rec_date", now()->toDateString())
-            ->orderByDesc("id")
-            ->get(["msgcount", "msgresponse", "rec_date"]);
-
-        $last = $rows->first();
-        $summary = "";
-        if ($last) {
-            $summary = date("H:i", strtotime((string) $last->rec_date)) . " " . explode("|", (string) $last->msgresponse, 2)[0];
-        }
-
-        return [
-            "runs" => $rows->count(),
-            "sent" => (int) $rows->sum("msgcount"),
-            "last" => trim($summary),
-        ];
-    }
-
     public function channelStatus(string $channel): array
     {
         $enabled = 1 === (int) config("web.cron.enabled." . $channel, 0);

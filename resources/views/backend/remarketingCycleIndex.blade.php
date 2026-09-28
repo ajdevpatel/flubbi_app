@@ -52,24 +52,11 @@
                                             <small class="text-muted">customers</small>
                                         </div>
                                     </div>
-                                    <p class="mb-1">
+                                    <p class="mb-0">
                                         <span class="text-heading fw-medium me-2">Day <span
                                                 class="badge bg-label-{{ $color }}">{{ $item['day'] }}</span></span>
                                         <span class="text-muted">applied {{ $item['udate'] }}</span>
                                     </p>
-                                    <p class="mb-2">
-                                        @foreach ($item['times'] as $time)
-                                            <span class="badge bg-label-secondary me-1"><i class="ti ti-clock me-1"></i>{{ $time }}</span>
-                                        @endforeach
-                                    </p>
-                                    @if ($item['today']['runs'] > 0)
-                                        <small class="d-block text-{{ $item['today']['sent'] > 0 ? 'success' : 'muted' }}">
-                                            Today: {{ $item['today']['runs'] }} run(s), {{ $item['today']['sent'] }} sent.
-                                            Last {{ $item['today']['last'] }}
-                                        </small>
-                                    @else
-                                        <small class="d-block text-muted">Today: not run yet</small>
-                                    @endif
                                 </div>
                             </div>
                         </div>

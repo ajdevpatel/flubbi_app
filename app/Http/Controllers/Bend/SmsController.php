@@ -127,9 +127,7 @@ class SmsController extends Controller
                 $buckets[] = [
                     "day" => $day,
                     "udate" => Carbon::now()->subDays($day)->format("d-m-Y"),
-                    "times" => $bucket["times"],
                     "customers" => count($service->audience($day)),
-                    "today" => $service->todayRuns($channel, $day),
                 ];
             }
 
