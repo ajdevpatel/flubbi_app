@@ -197,6 +197,12 @@
                 <div data-i18n="Page 2"> Support Request </div>
             </a>
         </li>
+        <li class="menu-item @if ('enquiries' == app('request')->input('menu_route')) active @endif">
+            <a href="{{ route('_enquiriesIndex') }}" class="menu-link">
+                <i class="menu-icon tf-icons ti ti-mail-question"></i>
+                <div data-i18n="Page 2"> Enquiries </div>
+            </a>
+        </li>
         <li class="menu-item @if ('settings' == app('request')->input('menu_route')) active @endif">
             <a href="{{ route('_webOptionPostIndex') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-settings-bolt"></i>

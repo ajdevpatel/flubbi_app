@@ -254,6 +254,22 @@ abstract class Controller
                     </a>';
         }
 
+        if (array_key_exists("done", $url) && "" !== $url["done"]) {
+            $html .= '<a href="' . $url['done'] . '" title="Mark as done">
+                        <button class="mx-1 btn btn-icon btn-label-success waves-effect">
+                            <span class="ti ti-check"></span>
+                        </button>
+                    </a>';
+        }
+
+        if (array_key_exists("reopen", $url) && "" !== $url["reopen"]) {
+            $html .= '<a href="' . $url['reopen'] . '" title="Reopen">
+                        <button class="mx-1 btn btn-icon btn-label-warning waves-effect">
+                            <span class="ti ti-arrow-back-up"></span>
+                        </button>
+                    </a>';
+        }
+
         if (array_key_exists("dnd_off", $url) && "" !== $url["dnd_off"]) {
             $html .= '<a href="' . $url['dnd_off'] . '" title="Remove from DND">
                         <button class="mx-1 btn btn-icon btn-label-success waves-effect">

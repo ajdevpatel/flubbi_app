@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
+        if (Schema::hasTable("web_enquiry")) {
+            return;
+        }
+
         Schema::create("web_enquiry", function (Blueprint $table) {
             $table->id();
             $table->string("uuid")->unique();
@@ -28,9 +29,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists("web_enquiry");

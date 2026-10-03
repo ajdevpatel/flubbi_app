@@ -13,6 +13,7 @@ use App\Http\Controllers\Bend\SettingsController;
 use App\Http\Controllers\Bend\SupportController;
 use App\Http\Controllers\Bend\TransactionsController;
 use App\Http\Controllers\Bend\InvoiceController;
+use App\Http\Controllers\Bend\EnquiriesController;
 use App\Http\Controllers\Bend\MarketingController;
 use App\Http\Controllers\Bend\ReportsController;
 use App\Http\Controllers\Bend\OurPartnersController;
@@ -115,6 +116,11 @@ Route::prefix(config("web.webapp.backend_slug"))->middleware(BendAuth::class)->g
         Route::get("/invoices/{key}/download", "invoiceDownload")->where("key", "[0-9]+")->name("_invoiceDownload");
     });
 
+    Route::controller(EnquiriesController::class)->group(function () {
+        Route::match(["get", "post"], "/enquiries", "enquiriesPostIndex")->name("_enquiriesIndex");
+        Route::get("/enquiries/{key}/status", "enquiryStatus")->where("key", "[a-z0-9-]+")->name("_enquiryStatus");
+    });
+
     Route::controller(MarketingController::class)->group(function () {
         Route::match(["get", "post"], "/marketing-manual", "manualMarketingIndex")->name("_manualMarketingIndex");
         Route::post("/import-manual", "addManualMarketingPost")->name("_addManualMarketingPost");
@@ -167,7 +173,7 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
         Route::get("/terms-and-conditions", "termsAndConditionsPost")->name("_termsAndConditionsPost");
         Route::get("/disclaimer", "disclaimerPost")->name("_disclaimerPost");
         Route::get("/faq", "faqPost")->name("_faqPost");
-        Route::match(["get", "post"], "/contact-us", "contactusPost")->name("_contactusPost");
+        Route::match(["get", "post"], "/contact-us", "contactusPost")->middleware("throttle:20,1")->name("_contactusPost");
         Route::post("/add-lead", "loanLeadPost")->name("_loanLeadPost");
         Route::get("/emi-calculator", "emiCalculatorPostIndex")->name("_emiCalculatorIndex");
         Route::get("/credit-card", "creditCardSoonIndex")->name("_creditCardSoonIndex");
