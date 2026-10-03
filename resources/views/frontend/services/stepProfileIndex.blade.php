@@ -21,6 +21,7 @@
                     <label class="fl-field__label" for="pincode">PIN code <span class="fl-req">*</span></label>
                     <input class="fl-field__control numeric" type="text" name="pincode" id="pincode" inputmode="numeric"
                         maxlength="6" pattern="[0-9]{6}" placeholder="6 digit PIN code"
+                        data-pincode-lookup="{{ route('_pincodeLookup', ['pincode' => '__PIN__']) }}"
                         value="{{ $session_user->pincode ?? '' }}" required>
                 </div>
             </div>

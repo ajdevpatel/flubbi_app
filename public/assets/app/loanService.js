@@ -190,5 +190,73 @@
                 $el.closest("form").find("[type=submit]").first().focus();
             }
         });
+
+        var pincodes = {};
+
+        $(document).on("input change", "[data-pincode-lookup]", function () {
+            var $pin = $(this);
+            var $form = $pin.closest("form");
+            var typed = function () {
+                return String($pin.val() || "").trim();
+            };
+            var pin = typed();
+
+            var hint = function (text) {
+                var $hint = $pin.siblings(".js-pincode-hint");
+                if (!text) {
+                    $hint.remove();
+                    return;
+                }
+                if (!$hint.length) {
+                    $hint = $('<span class="fl-field__hint js-pincode-hint"></span>').insertAfter($pin);
+                }
+                $hint.text(text);
+            };
+
+            if (!/^[1-9][0-9]{5}$/.test(pin)) {
+                $pin.data("pincode-last", "");
+                hint("");
+                return;
+            }
+            if ($pin.data("pincode-last") === pin) {
+                return;
+            }
+            $pin.data("pincode-last", pin);
+
+            var fill = function (place) {
+                if (typed() !== pin) {
+                    return;
+                }
+                if (!place || !place.found) {
+                    hint("We could not find this PIN code. Please enter your city and state.");
+                    return;
+                }
+                if (place.city) {
+                    $form.find("[name=city]").val(place.city).trigger("change");
+                }
+                if (place.state_id) {
+                    $form.find("[name=state_id]").val(String(place.state_id)).trigger("change");
+                }
+                hint("");
+            };
+
+            if (pincodes[pin]) {
+                fill(pincodes[pin]);
+                return;
+            }
+
+            hint("Finding your city and state...");
+            $.getJSON(String($pin.attr("data-pincode-lookup")).replace("__PIN__", pin))
+                .done(function (place) {
+                    pincodes[pin] = place;
+                    fill(place);
+                })
+                .fail(function () {
+                    if (typed() === pin) {
+                        $pin.data("pincode-last", "");
+                        hint("");
+                    }
+                });
+        });
     });
 })(jQuery);

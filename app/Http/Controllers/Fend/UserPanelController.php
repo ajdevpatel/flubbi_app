@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Fend;
 use App\Http\Controllers\Controller;
 use App\Services\InvoicePdfService;
 use App\Services\OtpService;
+use App\Services\PincodeService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -601,6 +602,15 @@ class UserPanelController extends Controller
             "message" => "Profile updated",
             "step" => route("_userProfile"),
         ], 200);
+    }
+
+    public function pincodeLookup(string $pincode, PincodeService $pincodes)
+    {
+        if (0 === (int) (session(self::SESSION_KEY . ".user_id") ?? 0)) {
+            return response()->json(["found" => false], 403);
+        }
+
+        return response()->json($pincodes->lookup($pincode) ?? ["found" => false]);
     }
 
     private function cityId(int $state_id, string $city): ?int

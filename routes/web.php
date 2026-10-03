@@ -215,6 +215,7 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
         Route::any("/login", "loginIndex")->name("_userLogin");
         Route::post("/login/send-otp", "loginSendOtp")->middleware("throttle:10,1")->name("_userLoginSendOtp");
         Route::get("/logout", "logoutIndex")->name("_userLogout");
+        Route::get("/pincode/{pincode}", "pincodeLookup")->where("pincode", "[1-9][0-9]{5}")->middleware("throttle:30,1")->name("_pincodeLookup");
 
         Route::prefix("user")->group(function () {
             Route::get("/", fn () => redirect()->route("_userDashboard"));

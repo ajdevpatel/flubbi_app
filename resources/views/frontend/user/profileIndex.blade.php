@@ -72,7 +72,7 @@
                 <div class="col-md-4">
                     <div class="fl-field">
                         <label class="fl-field__label" for="pincode">PIN code <span class="fl-req">*</span></label>
-                        <input class="fl-field__control numeric" type="text" name="pincode" id="pincode" inputmode="numeric" maxlength="6" value="{{ $user->pincode }}" required>
+                        <input class="fl-field__control numeric" type="text" name="pincode" id="pincode" inputmode="numeric" maxlength="6" data-pincode-lookup="{{ route('_pincodeLookup', ['pincode' => '__PIN__']) }}" value="{{ $user->pincode }}" required>
                     </div>
                 </div>
                 <div class="col-md-4">
