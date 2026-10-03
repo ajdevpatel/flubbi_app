@@ -226,6 +226,11 @@ class HomeController extends Controller
         return view("frontend.emiCalculatorIndex");
     }
 
+    public function creditCardSoonIndex(Request $request)
+    {
+        return view("frontend.creditCardSoonIndex");
+    }
+
     public function contactusPost(Request $request)
     {
         // Only AJAX POST

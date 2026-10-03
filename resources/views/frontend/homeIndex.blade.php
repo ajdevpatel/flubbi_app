@@ -248,7 +248,7 @@
                             <div class="service_thumb">
                                 <img src="assets/images/home_3/service_3.png" alt="">
                                 <div class="service_icon">
-                                    <a href="#"><img src="assets/images/home_3/service_icon.png"
+                                    <a href="{{ route('_creditCardSoonIndex') }}"><img src="assets/images/home_3/service_icon.png"
                                             alt=""></a>
                                 </div>
                             </div>
@@ -259,7 +259,7 @@
                                 <p>Seamlessly expedite extensible the business
                                     methodologies benchmark done</p>
                                 <div class="service_btn">
-                                    <a href="service-details.html">View Details <i
+                                    <a href="{{ route('_creditCardSoonIndex') }}">View Details <i
                                             class="flaticon flaticon-right-arrow"></i></a>
                                 </div>
                             </div>

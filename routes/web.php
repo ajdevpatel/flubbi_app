@@ -170,6 +170,7 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
         Route::match(["get", "post"], "/contact-us", "contactusPost")->name("_contactusPost");
         Route::post("/add-lead", "loanLeadPost")->name("_loanLeadPost");
         Route::get("/emi-calculator", "emiCalculatorPostIndex")->name("_emiCalculatorIndex");
+        Route::get("/credit-card", "creditCardSoonIndex")->name("_creditCardSoonIndex");
         Route::get("help-and-support", "homeIndex")->name("_helpAndSupportPost");
 
         // Account Deletion Routes
