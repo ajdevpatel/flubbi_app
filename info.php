@@ -12,6 +12,12 @@ php artisan optimize
 * * * * * cd /path/to/flubbi_app && php artisan schedule:run >> /dev/null 2>&1
 
 
+
+
+https://login.greensms.in/sms-panel/api-ip-rule.php
+
+
+
 4e5f9d4b-b8a3-4108-a1b3-368213aa1e74
 
 

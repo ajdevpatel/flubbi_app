@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Fend;
 use App\Http\Controllers\Controller;
 use App\Services\OtpService;
 use App\Services\RazorpayService;
+use App\Services\WhatsappNotifyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -1081,6 +1082,8 @@ class LoanServiceController extends Controller
                 "updated_at" => now(),
             ]);
 
+            $this->notifyPaymentFailed($loan, $tz, $this->paymentFailureReason($request->input("error")));
+
             return response()->json([
                 "message" => "Payment was not completed",
                 "step" => $this->stepUrl($type, "failed"),
@@ -1114,6 +1117,8 @@ class LoanServiceController extends Controller
                 "updated_at" => now(),
             ]);
 
+            $this->notifyPaymentFailed($loan, $tz, "Payment could not be verified");
+
             return response()->json([
                 "errors" => ["message" => ["Payment could not be verified. If money was deducted it will be refunded automatically."]],
                 "step" => $this->stepUrl($type, "failed"),
@@ -1135,7 +1140,65 @@ class LoanServiceController extends Controller
             ]);
         });
 
+        $this->notifyApplicationReceived($loan, self::SERVICES[$type]["label"]);
+
         return $this->stepResponse($type, $after_payment, "Payment successful");
+    }
+
+    private function notifyPaymentFailed($loan, $tz, string $reason): void
+    {
+        $already_reported = "failed" === $tz->status;
+        if ($already_reported) {
+            return;
+        }
+
+        $this->queueWhatsapp("payment_failed", $loan, [
+            "amount" => number_format((float) $tz->total_amount, 2, ".", ""),
+            "reason" => $reason,
+        ]);
+    }
+
+    private function notifyApplicationReceived($loan, string $loan_type): void
+    {
+        $amount = (float) ($loan->eligible_amount ?? 0);
+        if ($amount <= 0) {
+            $amount = (float) config("web.cron.default_eligible_amount", 500000);
+        }
+
+        $this->queueWhatsapp("application_received", $loan, [
+            "loan_amount" => "₹" . rtrim(rtrim($this->amountFormatIndia((int) round($amount)), "0"), "."),
+            "loan_type" => $loan_type,
+        ]);
+    }
+
+    private function queueWhatsapp(string $event, $loan, array $values): void
+    {
+        $user = $this->sessionUser();
+        if (!$user) {
+            return;
+        }
+
+        $phone = (string) $user->phone;
+        $reference = (string) $loan->application_no;
+        $values += [
+            "name" => !empty($user->name) ? ucwords((string) $user->name) : "Customer",
+            "application_no" => $reference,
+        ];
+
+        app()->terminating(function () use ($event, $phone, $values, $reference) {
+            (new WhatsappNotifyService())->send($event, $phone, $values, $reference);
+        });
+    }
+
+    private function paymentFailureReason($error): string
+    {
+        $text = is_array($error) && is_string($error["description"] ?? null) ? $error["description"] : "";
+        $text = trim(preg_replace("/\s+/", " ", $text) ?? "");
+
+        $plain = 1 === preg_match("/^[A-Za-z0-9 .,'\-]{3,200}$/", $text);
+        $has_link = 1 === preg_match("/https?|www|[a-z0-9]\.[a-z]{2,}/i", $text);
+
+        return $plain && !$has_link ? $text : "Payment Failed";
     }
 
     public function stepBanksIndex(Request $request)

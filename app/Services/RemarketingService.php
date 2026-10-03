@@ -231,7 +231,7 @@ class RemarketingService
             "TemplateID" => $templateId,
         ];
 
-        [$ok, $body] = $this->curl((string) ($cfg["uri"] ?? ""), $payload, false);
+        [$ok, $body] = $this->curl((string) ($cfg["uri"] ?? ""), $payload);
         if (!$ok) {
             return [false, $body];
         }
@@ -266,76 +266,17 @@ class RemarketingService
 
     private function postWhatsapp(object $row, int $day, array $cfg): array
     {
-        $to = "91" . $row->phone;
-        $media = trim((string) $cfg["media_url"]);
-
-        $meta = [
-            "messaging_product" => "whatsapp",
-            "recipient_type" => "individual",
-            "to" => $to,
-            "type" => "template",
-            "template" => [
-                "name" => (string) $cfg["template"],
-                "language" => ["code" => (string) (!empty($cfg["language"]) ? $cfg["language"] : "en")],
-                "components" => [
-                    [
-                        "type" => "header",
-                        "parameters" => [
-                            ["type" => "image", "image" => ctype_digit($media) ? ["id" => $media] : ["link" => $media]],
-                        ],
-                    ],
-                    [
-                        "type" => "body",
-                        "parameters" => array_map(
-                            fn (string $text) => ["type" => "text", "text" => $text],
-                            $this->bodyParams($row)
-                        ),
-                    ],
-                ],
-            ],
-            "biz_opaque_callback_data" => "whatsapp-" . $day . ":" . (!empty($row->application_no) ? $row->application_no : $row->phone),
-        ];
-
-        if ("unified" === strtolower((string) ($cfg["mode"] ?? "meta"))) {
-            unset($meta["to"]);
-            $payload = [
-                "channel" => "WhatsApp",
-                "to" => [$to],
-                "from" => (string) $cfg["from"],
-                "content" => ["data" => ["templatepayload" => $meta]],
-            ];
-        } else {
-            $payload = $meta;
-        }
-
-        $headerName = !empty($cfg["auth_header"]) ? (string) $cfg["auth_header"] : "Authorization";
-        $headerValue = "authorization" === strtolower($headerName)
-            ? "Bearer " . $cfg["api_key"]
-            : (string) $cfg["api_key"];
-
-        [$ok, $body] = $this->curl((string) $cfg["api_url"], $payload, true, [$headerName . ": " . $headerValue]);
-        if (!$ok) {
-            return [false, $body];
-        }
-
-        $decoded = json_decode($body, true);
-        $rejected = false;
-        if (is_array($decoded)) {
-            if (isset($decoded["error"])) {
-                $rejected = true;
-            } elseif (array_key_exists("status", $decoded) && !is_array($decoded["status"])) {
-                $accepted = filter_var($decoded["status"], FILTER_VALIDATE_BOOLEAN)
-                    || in_array(strtolower((string) $decoded["status"]), ["success", "sent", "queued", "submitted", "accepted", "ok"], true);
-                $rejected = !$accepted;
-            } elseif (array_key_exists("success", $decoded)) {
-                $rejected = !filter_var($decoded["success"], FILTER_VALIDATE_BOOLEAN);
-            }
-        }
-
-        return [!$rejected, $body];
+        return (new WbboxService())->sendTemplate(
+            (string) $row->phone,
+            (string) $cfg["template"],
+            (string) (!empty($cfg["language"]) ? $cfg["language"] : "en"),
+            (string) $cfg["media_url"],
+            $this->bodyParams($row),
+            "whatsapp-" . $day . ":" . (!empty($row->application_no) ? $row->application_no : $row->phone)
+        );
     }
 
-    private function curl(string $url, array $payload, bool $json, array $headers = []): array
+    private function curl(string $url, array $payload): array
     {
         if ("" === $url) {
             return [false, "no endpoint configured"];
@@ -345,11 +286,10 @@ class RemarketingService
         curl_setopt_array($curl, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $json ? json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : $payload,
+            CURLOPT_POSTFIELDS => $payload,
             CURLOPT_TIMEOUT => (int) config("web.cron.timeout_seconds", 20),
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_HTTPHEADER => array_merge($json ? ["Content-Type: application/json", "Accept: application/json"] : [], $headers),
         ]);
 
         $response = curl_exec($curl);
