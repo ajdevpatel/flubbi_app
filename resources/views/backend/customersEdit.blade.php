@@ -121,27 +121,6 @@
                                                     </select>
                                                 </div>
                                                 <div class="mb-3 col-12">
-                                                    <hr>
-                                                    <h4><b>Change Password</b></h4>
-                                                </div>
-                                                <div class="mb-3 col-md-4">
-                                                    <label class="form-label" for="label">Password </label>
-                                                    <input type="password" class="form-control" name="password" />
-                                                </div>
-                                                <div class="mb-3 col-md-4">
-                                                    <label class="form-label" for="label">Retype Password </label>
-                                                    <input type="password" class="form-control" name="cpassword" />
-                                                </div>
-                                                <div class="mb-3 col-md-2" id="g-pwd-section">
-                                                    <label class="form-label" for="label">Generate Password </label>
-                                                    <input type="text" disabled class="form-control" id="g_pwd">
-                                                </div>
-                                                <div class="mb-3 col-md-2">
-                                                    <br>
-                                                    <button type="button" id="generate_pwd"
-                                                        class="btn btn-primary btn-toggle-sidebar waves-effect waves-light">Generate</button>
-                                                </div>
-                                                <div class="mb-3 col-12">
                                                     <hr class="my-2" />
                                                     <button type="submit"
                                                         class="btn btn-outline-danger waves-effect me-sm-3">

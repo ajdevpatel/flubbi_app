@@ -85,6 +85,7 @@ Route::prefix(config("web.webapp.backend_slug"))->middleware(BendAuth::class)->g
         Route::delete("/customers/{key}", "postDelete")->where("key", "[a-z0-9-]+")->name("_customersDelete");
         Route::get("/documents/{key}/{type}", "documentsUpdate")->where("key", "[a-z0-9-]+")->name("_documentsUpdate");
         Route::get("/documents/{key}", "documentsVerifyStatusUpdate")->where("key", "[a-z0-9-]+")->name("_documentsVerifyStatusUpdate");
+        Route::match(["get", "post"], "/deleted-customers", "deletedPostIndex")->name("_deletedCustomersIndex");
         Route::match(["get", "post"], "/dnd-customers", "dndPostIndex")->name("_dndCustomersIndex");
         Route::match(["get", "post"], "/dnd-customers/{key}", "dndAddRemovePostIndex")->where("key", "[a-z0-9-]+")->name("_dndAddRemoveIndex");
 

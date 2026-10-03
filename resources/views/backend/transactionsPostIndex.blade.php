@@ -79,10 +79,10 @@
                     <div class="d-flex align-content-center flex-wrap gap-3">
                         <select id="status_filter" class="form-select">
                             <option value="">All status</option>
-                            <option value="success">Success</option>
-                            <option value="pending">Pending</option>
-                            <option value="failed">Failed</option>
-                            <option value="refunded">Refunded</option>
+                            <option value="success" @selected('success' === request('status'))>Success</option>
+                            <option value="pending" @selected('pending' === request('status'))>Pending</option>
+                            <option value="failed" @selected('failed' === request('status'))>Failed</option>
+                            <option value="refunded" @selected('refunded' === request('status'))>Refunded</option>
                         </select>
                         <select id="login_type_filter" class="form-select">
                             <option value="">All types</option>
@@ -93,9 +93,9 @@
                     <div class="d-flex align-content-center flex-wrap gap-3">
                         <div class="input-group input-daterange" id="from-to-date">
                             <input type="date" id="fdate" class="form-control"
-                                value="{{ today()->subDays(30)->format('Y-m-d') }}" />
+                                value="{{ $filter_fdate }}" />
                             <span class="input-group-text">To</span>
-                            <input type="date" id="tdate" class="form-control" value="{{ today()->format('Y-m-d') }}" />
+                            <input type="date" id="tdate" class="form-control" value="{{ $filter_tdate }}" />
                             <button class="btn btn-primary me-sm-3 me-1 waves-effect waves-light"
                                 id="filter_btn_date">Apply</button>
                         </div>

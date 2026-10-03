@@ -26,11 +26,11 @@ class UsersController extends Controller
 
         $creditCardApplicationCount = DB::table('loan_applications')->where('loan_type_id', '3')->whereDate('applied_at', today())->count();
 
-        //$transactionCount = (DB::table('transactions')->whereDate('created_at', today())->count()) ?? 0;
-        $transactionCount = 0;
+        $transactionSuccessCount = DB::table('payment_transactions')->where('status', 'success')->whereDate('created_at', today())->count();
+        $transactionFailedCount = DB::table('payment_transactions')->where('status', 'failed')->whereDate('created_at', today())->count();
         $otpCount = DB::table('otp_logs')->whereDate('created_at', today())->count();
         $supportRequestCount = DB::table('support_tickets')->where('status', 'open')->whereDate('created_at', today())->count();
 
-        return view("backend.dashboard", compact("otpCount", "plApplicationCountSelf", "plApplicationCountHireAgent", "blApplicationCountSelf", "blApplicationCountHireAgent", "creditCardApplicationCount", "supportRequestCount", "allCustomersCount", "transactionCount"));
+        return view("backend.dashboard", compact("otpCount", "plApplicationCountSelf", "plApplicationCountHireAgent", "blApplicationCountSelf", "blApplicationCountHireAgent", "creditCardApplicationCount", "supportRequestCount", "allCustomersCount", "transactionSuccessCount", "transactionFailedCount"));
     }
 }

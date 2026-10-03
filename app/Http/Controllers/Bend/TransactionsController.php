@@ -142,7 +142,12 @@ class TransactionsController extends Controller
                 ->make(true);
         }
 
-        return view("backend.transactionsPostIndex");
+        $valid_date = fn ($value) => is_string($value) && 1 === preg_match("/^\d{4}-\d{2}-\d{2}$/", $value) && false !== strtotime($value);
+
+        return view("backend.transactionsPostIndex", [
+            "filter_fdate" => $valid_date($request->query("fdate")) ? $request->query("fdate") : today()->subDays(30)->format("Y-m-d"),
+            "filter_tdate" => $valid_date($request->query("tdate")) ? $request->query("tdate") : today()->format("Y-m-d"),
+        ]);
     }
 
     public function subscriptionsPostIndex(Request $request)

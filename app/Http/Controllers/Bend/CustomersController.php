@@ -184,7 +184,7 @@ class CustomersController extends Controller
     public function postUpdate(string $id = null, Request $request)
     {
         if ($request->ajax() && "PUT" === $request->method()) {
-            Validator::make($request->all(), [
+            Validator::make(["uuid" => $id] + $request->all(), [
                 "uuid" => "required|exists:users,uuid",
                 "p_id" => "required|numeric|exists:users,id",
                 "name" => "required",
@@ -194,14 +194,23 @@ class CustomersController extends Controller
                 "city" => "required",
                 "status" => "required|in:0,1,2",
                 "state" => "required|numeric|exists:states,id",
-                "password" => "",
-                "cpassword" => "required_if:password,!=,''|same:password",
             ], [
-                "id.*" => "user account does not exist in please user credentials.",
-                "cpassword.*" => "password and confirm password do not match",
+                "uuid.*" => "This customer account does not exist.",
             ])->validate();
 
-            $user_data = DB::table("users")->where("uuid", $request->uuid)->first();
+            $user_data = DB::table("users")
+                ->where("uuid", $id)
+                ->where("id", $request->p_id)
+                ->where("role", "2")
+                ->whereNull("deleted_at")
+                ->first();
+            if (!$user_data) {
+                return response()->json([
+                    "errors" => [
+                        "message" => ["This customer account does not exist."]
+                    ]
+                ], 422);
+            }
             if ($user_data->email != $request->mail) {
                 Validator::make($request->all(), [
                     "mail" => "required|email|unique:users,email",
@@ -223,18 +232,7 @@ class CustomersController extends Controller
                 "status" => $request->status,
                 "updated_at" => $this->currentDataTime(),
             ];
-            if ($request->has("password") && "" != $request->password) {
-                Validator::make($request->all(), [
-                    "password" => "required|min:8",
-                    "cpassword" => "required|min:8|same:password",
-                ], [
-                    "cpassword.*" => "password and confirm password do not match",
-                ])->validate();
-                $in_data["password"] = Hash::make($request->password);
-
-                $this->sendUserCredentials($request->p_id, $request->password);
-            }
-            DB::table("users")->where("uuid", $request->uuid)->where("id", $request->p_id)->update($in_data);
+            DB::table("users")->where("id", $user_data->id)->update($in_data);
             return response()->json(["message" => "Profile updated successfully."], 200);
         }
 
@@ -307,6 +305,63 @@ class CustomersController extends Controller
         }
         DB::table("loan_documents")->where("loan_documents.id", $id)->update($in_data);
         return redirect()->route("_customersEdit", ["key" => $u_uuid]);
+    }
+
+    public function deletedPostIndex(Request $request)
+    {
+        if ($request->ajax()) {
+            $fdate = $request->filled("fdate") ? date("Y-m-d 00:00:00", strtotime($request->fdate)) : null;
+            $tdate = $request->filled("tdate") ? date("Y-m-d 23:59:59", strtotime($request->tdate)) : null;
+            $deleted_time = DB::raw("COALESCE(users.deleted_at, users.updated_at)");
+
+            $table_data = DB::table("users")
+                ->select([
+                    "users.id",
+                    "users.name",
+                    "users.phone",
+                    "users.email",
+                    "users.created_at",
+                    DB::raw("COALESCE(users.deleted_at, users.updated_at) as deleted_at"),
+                ])
+                ->where("users.role", "2")
+                ->where(function ($q) {
+                    $q->where("users.status", 3)->orWhereNotNull("users.deleted_at");
+                })
+                ->when($fdate, fn ($q) => $q->where($deleted_time, ">=", $fdate))
+                ->when($tdate, fn ($q) => $q->where($deleted_time, "<=", $tdate))
+                ->orderBy("deleted_at", "desc")
+                ->get()
+                ->map(function ($row) {
+                    $phone_mark = $row->id . "_D_";
+                    $email_mark = "del" . $row->id . "_";
+                    $phone = (string) $row->phone;
+                    $email = (string) $row->email;
+
+                    $row->name = "" !== trim((string) $row->name) ? ucwords((string) $row->name) : "-";
+                    $row->phone = str_starts_with($phone, $phone_mark) ? substr($phone, strlen($phone_mark)) : ($phone ?: "-");
+                    $row->email = str_starts_with($email, $email_mark) ? substr($email, strlen($email_mark)) : ($email ?: "-");
+
+                    return $row;
+                });
+
+            return DataTables::of($table_data)
+                ->addColumn("created_at", function ($row) {
+                    return !empty($row->created_at) ? date("d M Y", strtotime($row->created_at)) : "-";
+                })
+                ->addColumn("created_time", function ($row) {
+                    return !empty($row->created_at) ? date("h:i A", strtotime($row->created_at)) : "-";
+                })
+                ->addColumn("deleted_at", function ($row) {
+                    return !empty($row->deleted_at) ? date("d M Y", strtotime($row->deleted_at)) : "-";
+                })
+                ->addColumn("deleted_time", function ($row) {
+                    return !empty($row->deleted_at) ? date("h:i A", strtotime($row->deleted_at)) : "-";
+                })
+                ->removeColumn("id")
+                ->make(true);
+        }
+
+        return view("backend.deletedCustomersIndex");
     }
 
     public function dndPostIndex(Request $request)

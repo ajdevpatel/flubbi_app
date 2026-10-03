@@ -36,15 +36,6 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 
-$("#g-pwd-section").hide();
-$(document).on("click", "#generate_pwd", function(e) {
-    let randomstring = Math.random().toString(36).slice(-8);
-    $("#g-pwd-section").show();
-    $("#g_pwd").val(randomstring);
-    $("input[name='password']").val(randomstring);
-    $("input[name='cpassword']").val(randomstring);
-});
-
 $("#_moduleupdate").validate({
   rules: {
     name: {

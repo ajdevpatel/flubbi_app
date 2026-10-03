@@ -179,6 +179,12 @@
                 <div data-i18n="Page 2"> DND Customers </div>
             </a>
         </li>
+        <li class="menu-item @if (in_array(app('request')->input('menu_route'), ['deleted-customers'])) active @endif">
+            <a href="{{ route('_deletedCustomersIndex') }}" class="menu-link">
+                <i class="menu-icon tf-icons ti ti-user-x"></i>
+                <div data-i18n="Page 2"> Deleted Customers </div>
+            </a>
+        </li>
         <li class="menu-item @if (in_array(app('request')->input('menu_route'), ['sms-message'])) active @endif">
             <a href="{{ route('_smsMessageIndex') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-message-circle-code"></i>

@@ -101,18 +101,34 @@
 
     <div class="row g-6 mb-4">
         <div class="col-lg-3 col-sm-6">
-            <div class="card card-border-shadow-primary h-100 cursor-pointer"
-                onclick="window.location.href='{{ route('_transactionsIndex') }}'">
+            <div class="card card-border-shadow-success h-100 cursor-pointer"
+                onclick="window.location.href='{{ route('_transactionsIndex', ['status' => 'success', 'fdate' => today()->format('Y-m-d'), 'tdate' => today()->format('Y-m-d')]) }}'">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2">
                         <div class="avatar me-4">
-                            <span class="avatar-initial rounded bg-label-primary">
-                                <i class="icon-base ti ti-currency-rupee icon-28px"></i>
+                            <span class="avatar-initial rounded bg-label-success">
+                                <i class="icon-base ti ti-circle-check icon-28px"></i>
                             </span>
                         </div>
-                        <h4 class="mb-0">{{ $transactionCount }}</h4>
+                        <h4 class="mb-0">{{ $transactionSuccessCount }}</h4>
                     </div>
-                    <p class="mb-1">Transactions</p>
+                    <p class="mb-1">Transactions - Success</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card card-border-shadow-danger h-100 cursor-pointer"
+                onclick="window.location.href='{{ route('_transactionsIndex', ['status' => 'failed', 'fdate' => today()->format('Y-m-d'), 'tdate' => today()->format('Y-m-d')]) }}'">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="avatar me-4">
+                            <span class="avatar-initial rounded bg-label-danger">
+                                <i class="icon-base ti ti-circle-x icon-28px"></i>
+                            </span>
+                        </div>
+                        <h4 class="mb-0">{{ $transactionFailedCount }}</h4>
+                    </div>
+                    <p class="mb-1">Transactions - Failed</p>
                 </div>
             </div>
         </div>
