@@ -319,7 +319,27 @@ class LoanServiceController extends Controller
             session()->forget(self::SESSION_KEY . ".application." . $type);
         }
 
-        return redirect()->to($this->stepUrl($type, $this->resolveStep($type)));
+        $preferred = (string) $request->query("login_type", "");
+        if (in_array($preferred, ["self", "consultant"], true)) {
+            session()->put(self::SESSION_KEY . ".preferred_login_type", $preferred);
+        } else {
+            $preferred = "";
+            session()->forget(self::SESSION_KEY . ".preferred_login_type");
+        }
+
+        $step = $this->resolveStep($type);
+        if ("" !== $preferred && "payment" === $step) {
+            $step = "login-type";
+        }
+
+        return redirect()->to($this->stepUrl($type, $step));
+    }
+
+    public function preferredLoginType(): string
+    {
+        $preferred = (string) session(self::SESSION_KEY . ".preferred_login_type", "");
+
+        return in_array($preferred, ["self", "consultant"], true) ? $preferred : "";
     }
 
     public function isFinished($loan): bool
@@ -878,7 +898,7 @@ class LoanServiceController extends Controller
         return $this->stepView($request, "login-type", [
             "fee_self" => $this->feeData("self"),
             "fee_consultant" => $this->feeData("consultant"),
-            "selected" => $loan->login_type ?? "self",
+            "selected" => $this->preferredLoginType() ?: ($loan->login_type ?? "self"),
         ]);
     }
 
@@ -914,6 +934,8 @@ class LoanServiceController extends Controller
             "step" => max(7, (int) $loan->step),
             "updated_at" => now(),
         ]);
+
+        session()->forget(self::SESSION_KEY . ".preferred_login_type");
 
         return $this->stepResponse($type, "payment", "Saved");
     }

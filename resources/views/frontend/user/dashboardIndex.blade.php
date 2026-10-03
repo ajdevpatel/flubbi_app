@@ -9,6 +9,8 @@
             <p>Track your applications, upload documents and manage your account.</p>
         </div>
         <div class="fl-actions" style="margin:0;">
+            <a class="fl-btn fl-btn--sm fl-btn--ghost" href="{{ route('_personalServiceStart', ['login_type' => 'self']) }}"><i class="bi bi-person-check"></i> Self Apply</a>
+            <a class="fl-btn fl-btn--sm fl-btn--ghost" href="{{ route('_personalServiceStart', ['login_type' => 'consultant']) }}"><i class="bi bi-headset"></i> Hire Agent</a>
             <a class="fl-btn fl-btn--sm" href="{{ route('_personalServiceStart') }}"><i class="bi bi-plus-lg"></i> Personal Loan</a>
             <a class="fl-btn fl-btn--sm fl-btn--ghost" href="{{ route('_businessServiceStart') }}"><i class="bi bi-plus-lg"></i> Business Loan</a>
         </div>
