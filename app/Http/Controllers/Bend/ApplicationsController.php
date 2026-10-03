@@ -323,6 +323,8 @@ class ApplicationsController extends Controller
             "application_no" => $application_no,
             "loan_amount" => $amount > 0 ? "₹" . rtrim(rtrim($this->amountFormatIndia((int) round($amount)), "0"), ".") : "",
             "loan_type" => $loan_type,
+            "loan_kind" => trim(preg_replace("/\s+loan$/i", "", $loan_type) ?? $loan_type),
+            "executive_contact" => (string) (config("web.whatsapp.executive_contact") ?: config("web.store_data.phone", "")),
             "remarks" => $remarks,
         ];
     }
