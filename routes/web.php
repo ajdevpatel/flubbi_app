@@ -220,6 +220,7 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
             Route::any("/support", "supportIndex")->name("_userSupport");
             Route::any("/notifications", "notificationsIndex")->name("_userNotifications");
             Route::get("/transactions", "transactionsIndex")->name("_userTransactions");
+            Route::get("/transactions/{transaction}/invoice", "transactionInvoice")->where("transaction", "[0-9]+")->name("_userTransactionInvoice");
             Route::any("/delete-account", "deleteAccountIndex")->name("_userDeleteAccount");
         });
     });

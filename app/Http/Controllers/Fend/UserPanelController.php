@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Fend;
 
 use App\Http\Controllers\Controller;
+use App\Services\InvoicePdfService;
 use App\Services\OtpService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -745,6 +746,26 @@ class UserPanelController extends Controller
                 ->orderByDesc("pt.id")
                 ->get(),
         ]);
+    }
+
+    public function transactionInvoice(Request $request, string $transaction)
+    {
+        [$user, $fail] = $this->requireUser($request);
+        if ($fail) {
+            return $fail;
+        }
+
+        $service = new InvoicePdfService();
+        $row = $service->query()
+            ->where("payment_transactions.id", (int) $transaction)
+            ->where("payment_transactions.user_id", $user->id)
+            ->first();
+
+        if (null === $row) {
+            abort(404);
+        }
+
+        return $service->download($row);
     }
 
     public function deleteAccountIndex(Request $request, OtpService $otp_service)

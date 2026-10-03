@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
+
 class InvoicePdfService
 {
     private const INK = [0.035, 0.086, 0.184];
@@ -46,6 +48,47 @@ class InvoicePdfService
     public function fileName(object $row): string
     {
         return $this->invoiceNumber((int) $row->p_id) . ".pdf";
+    }
+
+    public function query()
+    {
+        return DB::table("payment_transactions")
+            ->select([
+                "payment_transactions.id as p_id",
+                "payment_transactions.created_at",
+                "payment_transactions.payment_gateway",
+                "payment_transactions.gateway_payment_id",
+                "payment_transactions.gateway_transaction_id",
+                "payment_transactions.base_amount",
+                "payment_transactions.gst_percentage",
+                "payment_transactions.gst_amount",
+                "payment_transactions.total_amount",
+                "loan_applications.application_no as app_uuid",
+                "loan_applications.login_type",
+                "loan_types.label as loan_type_label",
+                "users.uuid as u_uuid",
+                "users.name as u_name",
+                "users.phone as u_phone",
+                "users.email as u_email",
+                "users.address as u_address",
+                "users.city as u_city",
+                "users.pincode as u_pincode",
+                "states.name as state_name",
+            ])
+            ->leftJoin("users", "users.id", "=", "payment_transactions.user_id")
+            ->leftJoin("states", "states.id", "=", "users.state_id")
+            ->leftJoin("loan_applications", "loan_applications.id", "=", "payment_transactions.loan_application_id")
+            ->leftJoin("loan_types", "loan_types.id", "=", "loan_applications.loan_type_id")
+            ->where("payment_transactions.status", "success");
+    }
+
+    public function download(object $row)
+    {
+        return response($this->build($row), 200, [
+            "Content-Type" => "application/pdf",
+            "Content-Disposition" => 'attachment; filename="' . $this->fileName($row) . '"',
+            "Cache-Control" => "private, max-age=0, must-revalidate",
+        ]);
     }
 
     public function taxBreakup(object $row): array

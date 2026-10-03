@@ -23,6 +23,7 @@
                             <th>Amount</th>
                             <th>Payment ID</th>
                             <th>Status</th>
+                            <th>Invoice</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -34,6 +35,13 @@
                                 <td><strong>&#8377; {{ number_format((float) $t->total_amount, 2) }}</strong><div class="muted">&#8377; {{ number_format((float) $t->base_amount) }} + GST &#8377; {{ number_format((float) $t->gst_amount, 2) }}</div></td>
                                 <td><span class="muted">{{ $t->gateway_payment_id ?: '—' }}</span><div class="muted">{{ ucfirst($t->payment_gateway) }}</div></td>
                                 <td><span class="up-badge up-badge--{{ 'success' === $t->status ? 'success' : ('failed' === $t->status ? 'failed' : 'pending') }}">{{ ucfirst($t->status) }}</span></td>
+                                <td>
+                                    @if ('success' === $t->status)
+                                        <a class="fl-btn fl-btn--sm fl-btn--ghost" href="{{ route('_userTransactionInvoice', ['transaction' => $t->id]) }}"><i class="bi bi-download"></i> PDF</a>
+                                    @else
+                                        <span class="muted">&mdash;</span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
