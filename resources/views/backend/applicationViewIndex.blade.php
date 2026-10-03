@@ -369,9 +369,8 @@
         <div class="md-3 mb-2">
             <label class="form-label" for="type">Remarks Message </label>
             <select name="pre_msg" class="form-select" id="pre_msg" >
-                <option data-msg="sss" value="aaaa" >No</option>
-                <option data-msg="xxx" value="cccc">Yes</option>
-                <option data-msg="rrrr" value="cccddd">dddd</option>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
             </select>
         </div>
 
@@ -403,12 +402,28 @@
     <script src="{{ asset('appassets/layout/applicationsIndex.js') }}"></script>
     <script>
 
-        $(document).on("change", "#pre_msg", function () {
-            $("textarea[name='remarks']").val(
-                $(this).find("option:selected").data("msg")
-            );
-        });
-        
+        (function () {
+            var $status = $("#_addStatusModule select[name='status']");
+            var $remarks = $("#_addStatusModule textarea[name='remarks']");
+            var messages = @json($status_messages);
+            var filled = "";
+
+            var fillRemarks = function () {
+                var message = messages[$status.val()] || "";
+                if ("" === $remarks.val() || $remarks.val() === filled) {
+                    $remarks.val(message);
+                    filled = message;
+                }
+            };
+
+            $status.on("change", fillRemarks);
+            $("#_addStatusModule").on("reset", function () {
+                filled = "";
+                setTimeout(fillRemarks, 0);
+            });
+            fillRemarks();
+        })();
+
         $("#_addStatusModule").validate({
             rules: {
                 status: {
@@ -439,6 +454,15 @@
                     success: function (xhr) {
                         if (xhr.message) {
                             Notify(xhr.message, "success");
+                        }
+                        if (xhr.whatsapp && xhr.whatsapp.text) {
+                            loadLoader();
+                            Notify(xhr.whatsapp.text, xhr.whatsapp.sent ? "success" : "error");
+                            $("#_addStatusModule [type=submit]").prop("disabled", true);
+                            setTimeout(function () {
+                                location.reload();
+                            }, 3500);
+                            return;
                         }
                         location.reload();
                     },

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Bend;
 
 use App\Http\Controllers\Controller;
+use App\Services\WhatsappNotifyService;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
@@ -286,7 +287,44 @@ class ApplicationsController extends Controller
             "data" => $table_data,
             "loan_status" => $loan_status,
             "application_history" => $application_history,
+            "status_messages" => $table_data ? $this->statusMessages($table_data) : [],
         ]);
+    }
+
+    private function statusMessages(object $application): array
+    {
+        $values = $this->statusMessageValues(
+            (string) ($application->u_name ?? ""),
+            (string) $application->uuid,
+            (float) ($application->loan_amount ?? 0),
+            (string) ($application->loan_types ?? "")
+        );
+
+        $messages = [];
+        foreach ((array) config("web.whatsapp.status_events", []) as $status_id => $event) {
+            $cfg = (array) config("web.whatsapp.events." . $event, []);
+            $text = (string) ($cfg["message"] ?? "");
+            if ("" === $text) {
+                continue;
+            }
+            foreach (array_values((array) ($cfg["body_params"] ?? [])) as $index => $token) {
+                $text = str_replace("{{" . ($index + 1) . "}}", (string) ($values[$token] ?? ""), $text);
+            }
+            $messages[(int) $status_id] = $text;
+        }
+
+        return $messages;
+    }
+
+    private function statusMessageValues(string $name, string $application_no, float $amount, string $loan_type, string $remarks = ""): array
+    {
+        return [
+            "name" => "" !== trim($name) ? ucwords($name) : "Customer",
+            "application_no" => $application_no,
+            "loan_amount" => $amount > 0 ? "₹" . rtrim(rtrim($this->amountFormatIndia((int) round($amount)), "0"), ".") : "",
+            "loan_type" => $loan_type,
+            "remarks" => $remarks,
+        ];
     }
 
     public function addStatusPost(string $id = null, Request $request)
@@ -317,25 +355,68 @@ class ApplicationsController extends Controller
             "updated_at" => $this->currentDataTime(),
         ]);
 
-        $table_data = DB::table("loan_applications")->select([
-            "loan_applications.id",
-            "users.name as u_name",
-            "users.phone as u_phone",
-            "users.email as u_email"
-        ])->Join("users", function ($join) {
-            $join->on("users.id", "=", "loan_applications.user_id");
-        })->where("loan_applications.application_no", $request->uuid)->first();
-
-        $phone = $table_data->u_phone ?? "";
-        $remarks = $request->remarks ?? "";
-        if (!empty($phone) && !empty($remarks)) {
-            $this->sendRemarkStatus($phone, $remarks);
+        $whatsapp = null;
+        if ("1" === (string) $request->input("pre_msg")) {
+            $whatsapp = $this->sendStatusWhatsapp((int) $request->id, (int) $request->status, (string) ($request->remarks ?? ""));
         }
 
-        return response()->json(["message" => "application status successfully changed."], 200);
+        return response()->json([
+            "message" => "application status successfully changed.",
+            "whatsapp" => $whatsapp,
+        ], 200);
     }
 
-    public function sendRemarkStatus() {}
+    private function sendStatusWhatsapp(int $application_id, int $status_id, string $remarks): array
+    {
+        $event = config("web.whatsapp.status_events." . $status_id);
+        if (empty($event)) {
+            return ["sent" => false, "text" => "No WhatsApp message is set up for this status yet."];
+        }
+
+        $application = DB::table("loan_applications")->select([
+            "loan_applications.application_no",
+            "loan_applications.eligible_amount",
+            "loan_types.label as loan_type",
+            "users.name as u_name",
+            "users.phone as u_phone",
+        ])->Join("users", function ($join) {
+            $join->on("users.id", "=", "loan_applications.user_id");
+        })->leftJoin("loan_types", function ($join) {
+            $join->on("loan_types.id", "=", "loan_applications.loan_type_id");
+        })->where("loan_applications.id", $application_id)->first();
+
+        if (!$application) {
+            return ["sent" => false, "text" => "WhatsApp message was not sent: customer not found."];
+        }
+
+        $values = $this->statusMessageValues(
+            (string) ($application->u_name ?? ""),
+            (string) $application->application_no,
+            (float) ($application->eligible_amount ?? 0),
+            (string) ($application->loan_type ?? ""),
+            $remarks
+        );
+        [$sent, $response] = (new WhatsappNotifyService())->send((string) $event, (string) $application->u_phone, $values, (string) $application->application_no);
+
+        if ($sent) {
+            return ["sent" => true, "text" => "WhatsApp message sent to the customer."];
+        }
+
+        return ["sent" => false, "text" => "WhatsApp message was not sent: " . $this->whatsappFailureReason((string) $response)];
+    }
+
+    private function whatsappFailureReason(string $response): string
+    {
+        if (str_starts_with($response, "skipped - ")) {
+            return substr($response, 10);
+        }
+
+        $json = strpos($response, "{");
+        $decoded = false !== $json ? json_decode(substr($response, $json), true) : null;
+        $reason = $decoded["error"]["error_data"]["details"] ?? $decoded["error"]["message"] ?? $decoded["message"] ?? $response;
+
+        return mb_substr(is_string($reason) ? $reason : $response, 0, 180);
+    }
 
     public function removeDocumentPost(Request $request)
     {
