@@ -7,10 +7,10 @@
 @section('stepBody')
     <div class="fl-offer">
         <div class="fl-offer__badge"><i class="bi bi-patch-check-fill"></i> Congratulations, you are eligible</div>
-        <div class="fl-offer__amount">&#8377; {{ number_format($offer_amount) }}</div>
+        <div class="fl-offer__amount">&#8377; {{ $offer_amount_text }}</div>
         <div class="fl-offer__meta">
             <span>Interest from <strong>{{ rtrim(rtrim(number_format($rate, 2), '0'), '.') }}% p.a.*</strong></span>
-            <span>Eligible up to <strong>&#8377; {{ number_format($eligible_amount) }}</strong></span>
+            <span>Eligible up to <strong>&#8377; {{ $eligible_amount_text }}</strong></span>
         </div>
     </div>
 

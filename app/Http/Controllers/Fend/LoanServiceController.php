@@ -810,8 +810,8 @@ class LoanServiceController extends Controller
         $existing_emi = (float) ($loan->existing_emi ?? 0);
         $requested = (float) ($loan->eligible_amount ?? self::LOAN_AMOUNT_MIN);
 
-        $eligible = (int) $this->checkUserLoanAmountEligiblity($income, $existing_emi, $rate, $requested);
-        $offer_amount = (int) min($eligible, max($requested, self::LOAN_AMOUNT_MIN));
+        $offer_amount = (int) min(self::LOAN_AMOUNT_MAX, max($requested, self::LOAN_AMOUNT_MIN));
+        $eligible = (int) $this->checkUserLoanAmountEligiblity($income, $existing_emi, $rate, $offer_amount);
 
         $tenures = [];
         foreach (self::TENURES as $months) {
@@ -825,6 +825,8 @@ class LoanServiceController extends Controller
             "rate" => $rate,
             "eligible_amount" => $eligible,
             "offer_amount" => $offer_amount,
+            "offer_amount_text" => rtrim(rtrim($this->amountFormatIndia($offer_amount), "0"), "."),
+            "eligible_amount_text" => rtrim(rtrim($this->amountFormatIndia($eligible), "0"), "."),
             "requested_amount" => $requested,
             "tenures" => $tenures,
         ];
