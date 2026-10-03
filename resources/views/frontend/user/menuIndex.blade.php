@@ -36,6 +36,12 @@
             </a>
         </li>
     @endforeach
+    <li>
+        <a href="{{ route('_creditCardSoonIndex') }}">
+            <i class="bi bi-credit-card"></i> Credit Card
+            <span class="up-tag">Soon</span>
+        </a>
+    </li>
     <li class="up-nav__sep"></li>
     <li class="is-danger">
         <a href="{{ route('_userDeleteAccount') }}" class="{{ request()->routeIs('_userDeleteAccount') ? 'is-active' : '' }}">

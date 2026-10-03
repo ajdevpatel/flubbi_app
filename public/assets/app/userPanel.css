@@ -123,6 +123,18 @@
     padding: 0 6px;
 }
 
+.up-nav li a .up-tag {
+    margin-left: auto;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: rgba(205, 182, 118, 0.22);
+    color: var(--fl-accent-dark);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
 .up-nav li.is-danger a {
     color: var(--fl-err);
 }
