@@ -21,6 +21,7 @@ class ApplicationsController extends Controller
     {
         $type = $request->input('type') ?: $request->route('type') ?: 'personal';
         $login_type = $request->input('login_type') ?: $request->route('login_type');
+        $stage = in_array($request->input('stage'), ['lead', 'customer'], true) ? $request->input('stage') : '';
 
         if ($request->ajax()) {
             $fdate = $request->filled("fdate") ? date("Y-m-d 00:00:00", strtotime($request->fdate)) : null;
@@ -35,6 +36,8 @@ class ApplicationsController extends Controller
                 DB::raw("'No' as emi_bounce"),
                 "loan_applications.tenure_months as loantenure",
                 "loan_applications.status",
+                "loan_applications.login_type",
+                "loan_applications.payment_status",
                 "loan_status.label as status_label",
                 DB::raw("'primary' as status_class"),
                 "loan_types.label as loan_types",
@@ -77,6 +80,12 @@ class ApplicationsController extends Controller
                 $query->where("loan_applications.login_type", $login_type);
             }
 
+            if ('lead' === $stage) {
+                $query->where("loan_applications.payment_status", "!=", 1);
+            } elseif ('customer' === $stage) {
+                $query->where("loan_applications.payment_status", 1);
+            }
+
             $table_data = $query->orderBy("loan_applications.id", "desc")->get();
             /* $sql = vsprintf(
                 str_replace('?', "'%s'", $query->toSql()),
@@ -89,6 +98,17 @@ class ApplicationsController extends Controller
                 ->addColumn("status", function ($row) {
                     $html = '<span class="badge bg-label-' . $row->status_class . '"> ' . $row->status_label . ' </span>';
                     return $html;
+                })
+                ->addColumn("login_type", function ($row) {
+                    return ['self' => 'Self', 'consultant' => 'Hire Agent'][$row->login_type] ?? "-";
+                })
+                ->addColumn("payment", function ($row) {
+                    $map = [
+                        1 => ["success", "Paid"],
+                        2 => ["danger", "Failed"],
+                    ];
+                    $badge = $map[(int) $row->payment_status] ?? ["warning", "Not Paid"];
+                    return '<span class="badge bg-label-' . $badge[0] . '"> ' . $badge[1] . ' </span>';
                 })
                 ->addColumn("rec_date", function ($row) {
                     return !empty($row->rec_date) ? date("d M Y", strtotime($row->rec_date)) : "-";
@@ -151,6 +171,7 @@ class ApplicationsController extends Controller
                 })
                 ->rawColumns([
                     "status",
+                    "payment",
                     "action",
                 ])
                 ->make(true);
@@ -168,7 +189,8 @@ class ApplicationsController extends Controller
         return view("backend.applicationsIndex", [
             "type" => $type,
             "type_name" => $type_name,
-            "login_type" => $login_type
+            "login_type" => $login_type,
+            "stage" => $stage,
         ]);
     }
 

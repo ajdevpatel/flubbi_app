@@ -1,8 +1,47 @@
 document.addEventListener("DOMContentLoaded", function () {
     if (1 == jQuery("#ajax_datatables").length) {
+        var stage = $("#stage").val() || "";
+        var state_key = "DataTables_ajax_datatables_" + window.location.pathname + "_" + stage;
+
+        var columns = [
+            { data: "DT_RowIndex", name: "DT_RowIndex" },
+            { data: "rec_date", name: "rec_date" },
+            { data: "rec_time", name: "rec_time" },
+            { data: "status", name: "status" },
+            { data: "u_name", name: "u_name" },
+            { data: "phone", name: "phone" },
+            { data: "email", name: "email" },
+            { data: "state", name: "state" },
+            { data: "city", name: "city" },
+            { data: "pincode", name: "pincode" },
+            { data: "income", name: "income" },
+            { data: "loan_amount", name: "loan_amount" },
+            { data: "loan_purposes", name: "loan_purposes" },
+            { data: "cibil_scores", name: "cibil_scores" },
+            { data: "loantenure", name: "loantenure" },
+            { data: "current_emi", name: "current_emi" },
+            { data: "emi_bounce", name: "emi_bounce" },
+            { data: "credit_card_usage", name: "credit_card_usage" },
+            { data: "action", name: "action" },
+        ];
+        if ("" !== stage) {
+            columns.splice(
+                4,
+                0,
+                { data: "login_type", name: "login_type" },
+                { data: "payment", name: "payment" }
+            );
+        }
+
         var ajax_datatables = $("#ajax_datatables").DataTable({
             stateSave: true,
             stateDuration: -1,
+            stateSaveCallback: function (settings, data) {
+                sessionStorage.setItem(state_key, JSON.stringify(data));
+            },
+            stateLoadCallback: function () {
+                return JSON.parse(sessionStorage.getItem(state_key) || "null");
+            },
             processing: true,
             serverSide: true,
             scrollX: true,
@@ -25,30 +64,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     type: function () {
                         return $("#type").val();
                     },
+                    stage: function () {
+                        return stage;
+                    },
                 },
             },
 
-            columns: [
-                { data: "DT_RowIndex", name: "DT_RowIndex" },
-                { data: "rec_date", name: "rec_date" },
-                { data: "rec_time", name: "rec_time" },
-                { data: "status", name: "status" },
-                { data: "u_name", name: "u_name" },
-                { data: "phone", name: "phone" },
-                { data: "email", name: "email" },
-                { data: "state", name: "state" },
-                { data: "city", name: "city" },
-                { data: "pincode", name: "pincode" },
-                { data: "income", name: "income" },
-                { data: "loan_amount", name: "loan_amount" },
-                { data: "loan_purposes", name: "loan_purposes" },
-                { data: "cibil_scores", name: "cibil_scores" },
-                { data: "loantenure", name: "loantenure" },
-                { data: "current_emi", name: "current_emi" },
-                { data: "emi_bounce", name: "emi_bounce" },
-                { data: "credit_card_usage", name: "credit_card_usage" },
-                { data: "action", name: "action" },
-            ],
+            columns: columns,
             lengthMenu: window.lengthMenu,
             pageLength: 10,
             dom: "Blfrtip",
@@ -56,6 +78,10 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         $(document).on("click", "#filter_btn_date", function (e) {
+            ajax_datatables.ajax.reload(null, true);
+        });
+
+        $(document).on("change", "select#login_type", function (e) {
             ajax_datatables.ajax.reload(null, true);
         });
     }

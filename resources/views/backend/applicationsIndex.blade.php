@@ -7,11 +7,18 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3">
             <div class="d-flex flex-column justify-content-center">
                 <h4 class="mb-1 mt-3">
-                    {{ $type_name }} Applications List <span
-                        class="badge bg-label-primary me-1">{{ ucfirst($login_type ?? 'self') }}</span>
+                    @if ('' !== $stage)
+                        {{ $type_name }} {{ 'lead' === $stage ? 'Leads' : 'Customers' }} List
+                    @else
+                        {{ $type_name }} Applications List <span
+                            class="badge bg-label-primary me-1">{{ ucfirst($login_type ?? 'self') }}</span>
+                    @endif
                 </h4>
-                <input type="hidden" id="login_type" value="{{ $login_type }}">
+                @if ('' === $stage)
+                    <input type="hidden" id="login_type" value="{{ $login_type }}">
+                @endif
                 <input type="hidden" id="type" value="{{ $type }}">
+                <input type="hidden" id="stage" value="{{ $stage }}">
             </div>
             <div class="d-flex align-content-center flex-wrap gap-3">
             </div>
@@ -24,6 +31,13 @@
                 <div
                     class="col-12 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
                     <div class="d-flex flex-column justify-content-center">
+                        @if ('' !== $stage)
+                            <select id="login_type" class="form-select">
+                                <option value="">All</option>
+                                <option value="self" @selected('self' === $login_type)>Self</option>
+                                <option value="consultant" @selected('consultant' === $login_type)>Hire Agent</option>
+                            </select>
+                        @endif
                     </div>
                     <div class="d-flex align-content-center flex-wrap gap-3">
                         <div class="col-12">
@@ -49,6 +63,10 @@ echo today()->format('Y-m-d'); @endphp" />
                         <th>Date</th>
                         <th>Time</th>
                         <th>Status</th>
+                        @if ('' !== $stage)
+                            <th>Type</th>
+                            <th>Payment</th>
+                        @endif
                         <th>Name</th>
                         <th>Mobile</th>
                         <th>Email</th>

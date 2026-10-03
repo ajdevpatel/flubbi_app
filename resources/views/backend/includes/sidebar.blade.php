@@ -87,18 +87,18 @@
 
             <ul class="menu-sub">
                 <li
-                    class="menu-item {{ request()->routeIs('_personalLoan*') && request('login_type', 'self') == 'self' ? 'active' : '' }}">
-                    <a href="{{ route('_personalLoanIndex', ['type' => 'personal', 'login_type' => 'self']) }}"
+                    class="menu-item {{ request()->routeIs('_personalLoan*') && request('stage') == 'lead' ? 'active' : '' }}">
+                    <a href="{{ route('_personalLoanIndex', ['type' => 'personal', 'stage' => 'lead']) }}"
                         class="menu-link">
-                        <div>Self</div>
+                        <div>Lead</div>
                     </a>
                 </li>
 
                 <li
-                    class="menu-item {{ request()->routeIs('_personalLoan*') && request('login_type') == 'consultant' ? 'active' : '' }}">
-                    <a href="{{ route('_personalLoanIndex', ['type' => 'personal', 'login_type' => 'consultant']) }}"
+                    class="menu-item {{ request()->routeIs('_personalLoan*') && request('stage') == 'customer' ? 'active' : '' }}">
+                    <a href="{{ route('_personalLoanIndex', ['type' => 'personal', 'stage' => 'customer']) }}"
                         class="menu-link">
-                        <div>Hire Agent</div>
+                        <div>Customer</div>
                     </a>
                 </li>
             </ul>
@@ -111,18 +111,18 @@
 
             <ul class="menu-sub">
                 <li
-                    class="menu-item {{ request()->routeIs('_businessLoan*') && request('login_type', 'self') == 'self' ? 'active' : '' }}">
-                    <a href="{{ route('_businessLoanIndex', ['type' => 'business', 'login_type' => 'self']) }}"
+                    class="menu-item {{ request()->routeIs('_businessLoan*') && request('stage') == 'lead' ? 'active' : '' }}">
+                    <a href="{{ route('_businessLoanIndex', ['type' => 'business', 'stage' => 'lead']) }}"
                         class="menu-link">
-                        <div>Self</div>
+                        <div>Lead</div>
                     </a>
                 </li>
 
                 <li
-                    class="menu-item {{ request()->routeIs('_businessLoan*') && request('login_type') == 'consultant' ? 'active' : '' }}">
-                    <a href="{{ route('_businessLoanIndex', ['type' => 'business', 'login_type' => 'consultant']) }}"
+                    class="menu-item {{ request()->routeIs('_businessLoan*') && request('stage') == 'customer' ? 'active' : '' }}">
+                    <a href="{{ route('_businessLoanIndex', ['type' => 'business', 'stage' => 'customer']) }}"
                         class="menu-link">
-                        <div>Hire Agent</div>
+                        <div>Customer</div>
                     </a>
                 </li>
             </ul>
