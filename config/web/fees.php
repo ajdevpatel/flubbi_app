@@ -1,13 +1,12 @@
 <?php
 
 return [
-    // website only - the mobile app keeps using API LoanController::payment_data()
     "gst_rate" => 18,
 
     "login_type" => [
         "self" => [
             "label" => "Self Login",
-            "base_amount" => 299,
+            "base_amount" => 99,
             "note" => "One time platform fee. Bank list with direct apply links is unlocked right after payment.",
         ],
         "consultant" => [
