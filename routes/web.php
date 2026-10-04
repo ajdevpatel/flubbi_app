@@ -182,8 +182,8 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
 
         // Account Deletion Routes
         Route::get("/delete-account", "accountDeleteIndex")->name("_accountDeleteIndex");
-        Route::post("/delete-account-send-otp", "accountDeleteSendOtp")->name("_accountDeleteSendOtp");
-        Route::post("/delete-account-verify", "accountDeleteVerify")->name("_accountDeleteVerify");
+        Route::post("/delete-account-send-otp", "accountDeleteSendOtp")->middleware("throttle:10,1")->name("_accountDeleteSendOtp");
+        Route::post("/delete-account-verify", "accountDeleteVerify")->middleware("throttle:20,1")->name("_accountDeleteVerify");
     });
 
     foreach (LoanServiceController::SERVICES as $service_type => $service) {

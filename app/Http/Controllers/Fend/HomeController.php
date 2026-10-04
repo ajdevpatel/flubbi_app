@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Fend;
 
 use App\Http\Controllers\Controller;
+use App\Services\OtpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -333,7 +334,7 @@ class HomeController extends Controller
         return view("frontend.accountDeleteIndex");
     }
 
-    public function accountDeleteSendOtp(Request $request)
+    public function accountDeleteSendOtp(Request $request, OtpService $otp_service)
     {
         if ($request->ajax() && "POST" === $request->method()) {
             $validator = Validator::make($request->all(), [
@@ -347,59 +348,36 @@ class HomeController extends Controller
                 ], 200);
             }
 
-            $phone = $request->phone;
-            if ($phone != 8866442200) {
-                $userExists = DB::table('users')->where('phone', $phone)->exists();
-                if (!$userExists) {
-                    return response()->json([
-                        "status" => false,
-                        "message" => "No account found with this mobile number.",
-                    ], 200);
-                }
+            $phone = (string) $request->phone;
+            if (!$otp_service->isTestPhone($phone) && !$this->deletableCustomer($phone)) {
+                return response()->json([
+                    "status" => false,
+                    "message" => "No account found with this mobile number.",
+                ], 200);
             }
-            $otp = rand(100000, 999999);
 
-            if ($phone == 8866442200) {
-                $otp = 123456;
-            } else {
-                $apiAuth = new \App\Http\Controllers\Api\AuthController();
-                $otp_res = $apiAuth->sendOTPTextMessage($phone, $otp);
-
-                if (true != $otp_res["status"]) {
-                    return response()->json([
-                        "status" => false,
-                        "message" => $otp_res["message"],
-                    ], 200);
-                }
-
-                DB::table('otp_logs')
-                    ->where('phone', $phone)
-                    ->where('is_used', '0')
-                    ->update([
-                        'is_used' => 1,
-                        'updated_at' => now()
-                    ]);
-
-                DB::table('otp_logs')->insert([
-                    'phone'      => $phone,
-                    'otp'        => $otp,
-                    'is_used'    => 0,
-                    'expires_at' => now()->addMinutes(5),
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
-            }
+            $sent = $otp_service->issue($phone);
 
             return response()->json([
-                'status' => true,
-                'message' => 'OTP sent successfully'
+                "status" => true === $sent["status"],
+                "message" => $sent["message"],
             ], 200);
         }
 
         return redirect()->route('_accountDeleteIndex');
     }
 
-    public function accountDeleteVerify(Request $request)
+    private function deletableCustomer(string $phone)
+    {
+        return DB::table("users")
+            ->where("phone", $phone)
+            ->where("role", "2")
+            ->whereIn("status", [0, 1])
+            ->whereNull("deleted_at")
+            ->first();
+    }
+
+    public function accountDeleteVerify(Request $request, OtpService $otp_service)
     {
         if ($request->ajax() && "POST" === $request->method()) {
             $validator = Validator::make($request->all(), [
@@ -414,39 +392,28 @@ class HomeController extends Controller
                 ], 200);
             }
 
-            if (!($request->phone == 8866442200 && $request->otp == 123456)) {
-                $otpRow = DB::table('otp_logs')
-                    ->where('phone', $request->phone)
-                    ->where('otp', $request->otp)
-                    ->where('is_used', '0')
-                    ->first();
-
-                if (!$otpRow) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Invalid or expired OTP'
-                    ], 200);
-                }
-
-                DB::table('otp_logs')
-                    ->where('id', $otpRow->id)
-                    ->update([
-                        'is_used' => 1,
-                        'updated_at' => now()
-                    ]);
+            $phone = (string) $request->phone;
+            $check = $otp_service->verify($phone, (string) $request->otp);
+            if (true !== $check["status"]) {
+                return response()->json([
+                    "status" => false,
+                    "message" => $check["message"],
+                ], 200);
             }
 
-            $user = DB::table('users')
-                ->where('phone', $request->phone)
-                ->first();
+            $user = $this->deletableCustomer($phone);
 
-            if ($user && $request->phone != 8866442200) {
-                DB::table('users')->where('id', $user->id)->update([
-                    'phone' =>  $user->id.'_D_'. $user->phone,
-                    'email' => $user->email ? 'del' . $user->id . '_' . $user->email : null,
-                    'status' => '3',
-                    'updated_at' => now()
-                ]);
+            if ($user && !$otp_service->isTestPhone($phone)) {
+                DB::transaction(function () use ($user) {
+                    DB::table("users")->where("id", $user->id)->update([
+                        "phone" => $user->id . "_D_" . $user->phone,
+                        "email" => $user->email ? "del" . $user->id . "_" . $user->email : null,
+                        "status" => 3,
+                        "fcm_token" => null,
+                        "updated_at" => now(),
+                    ]);
+                    DB::table("personal_access_tokens")->where("tokenable_id", $user->id)->delete();
+                });
             }
 
             return response()->json([

@@ -149,10 +149,10 @@
                             showMessage(response.message || 'Error sending OTP', true);
                         }
                     },
-                    error: function() {
+                    error: function(xhr) {
                         $('#sendOtpBtn').html('<i class="fas fa-paper-plane"></i> Send OTP');
                         $('#sendOtpBtn').prop('disabled', false);
-                        showMessage('Network error occurred.', true);
+                        showMessage(429 === xhr.status ? 'Too many attempts. Please try again after a minute.' : 'Network error occurred.', true);
                     }
                 });
             });
@@ -191,11 +191,11 @@
                                 showMessage(response.message || 'Error verifying OTP', true);
                             }
                         },
-                        error: function() {
+                        error: function(xhr) {
                             $('#verifyOtpBtn').html(
                                 '<i class="fas fa-trash"></i> Confirm Deletion');
                             $('#verifyOtpBtn').prop('disabled', false);
-                            showMessage('Network error occurred.', true);
+                            showMessage(429 === xhr.status ? 'Too many attempts. Please try again after a minute.' : 'Network error occurred.', true);
                         }
                     });
                 }
