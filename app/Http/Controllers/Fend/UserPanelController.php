@@ -100,10 +100,9 @@ class UserPanelController extends Controller
 
     private function supportData(): array
     {
-        $rows = DB::table("options")->whereIn("key", ["support_mail", "support_phone"])->pluck("value", "key");
         return [
-            "mail" => $rows["support_mail"] ?? config("web.store_data.support_mail"),
-            "phone" => $rows["support_phone"] ?? config("web.store_data.phone"),
+            "mail" => config("web.store_data.support_mail"),
+            "phone" => config("web.store_data.phone"),
         ];
     }
 

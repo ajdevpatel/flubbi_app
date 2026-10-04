@@ -2,7 +2,7 @@
 
 return [
     "timeout_seconds" => 8,
-    "executive_contact" => env("WA_LOAN_EXECUTIVE_CONTACT", ""),
+    "executive_contact" => env("WA_LOAN_EXECUTIVE_CONTACT") ?: "+91 93283 53154",
 
     "status_events" => [
         2 => "loan_under_review",
