@@ -33,7 +33,7 @@
                             <p>
                                 This Privacy Policy describes how {{ config('web.store_data.company_name') }}
                                 (“Company”, “we”, “us”, “our”) collects, uses, stores, and protects your information
-                                when you use the {{ config('web.store_data.app_name') }} mobile application (“App”) and website.
+                                when you use the {{ config('web.store_data.app_name') }} website (“Website”).
                             </p>
                             <p>
                                 By accessing or using our services, you agree to the practices described in this Privacy Policy.
@@ -70,7 +70,7 @@
                             <h4>1.3 Device & Usage Data</h4>
                             <ul>
                                 <li>Device type, operating system, IP address</li>
-                                <li>App usage logs and interaction data</li>
+                                <li>Website usage logs and interaction data</li>
                                 <li>Crash reports and diagnostics</li>
                                 <li>Cookies (for website users)</li>
                             </ul>
@@ -124,7 +124,7 @@
                             </ul>
 
                             <p>
-                                Despite our efforts, no system is completely secure. Use of the App is at your own risk.
+                                Despite our efforts, no system is completely secure. Use of the Website is at your own risk.
                             </p>
 
                             <hr>
@@ -181,7 +181,7 @@
 
                             <h3>10. Changes to This Policy</h3>
                             <p>
-                                We may update this Privacy Policy from time to time. Continued use of the App constitutes acceptance of updates.
+                                We may update this Privacy Policy from time to time. Continued use of the Website constitutes acceptance of updates.
                             </p>
 
                             <hr>

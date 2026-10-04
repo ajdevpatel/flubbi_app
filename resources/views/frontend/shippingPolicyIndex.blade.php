@@ -31,7 +31,7 @@
                             <p>
                                 This Shipping &amp; Delivery Policy explains how {{ config('web.store_data.company_name') }}
                                 (“we”, “us”, “our”) delivers the services purchased through the
-                                {{ config('web.store_data.app_name') }} website and mobile application.
+                                {{ config('web.store_data.app_name') }} website.
                             </p>
 
                             <hr>

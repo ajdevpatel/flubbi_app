@@ -31,25 +31,24 @@
 
                             <p>
                                 These Terms & Conditions (“Terms”) govern your use of the
-                                {{ config('web.store_data.app_name') }} mobile application (“App”)
-                                and website operated by {{ config('web.store_data.company_name') }}
+                                {{ config('web.store_data.app_name') }} website (“Website”) operated by {{ config('web.store_data.company_name') }}
                                 (“Company”, “we”, “us”, “our”).
                                 By accessing or using our services, you agree to these Terms.
-                                If you do not agree, please do not use the App.
+                                If you do not agree, please do not use the Website.
                             </p>
 
                             <hr>
 
                             <h3>1. Acceptance of Terms</h3>
                             <p>
-                                By registering, accessing, or using the App, you agree to be legally bound by these Terms,
+                                By registering, accessing, or using the Website, you agree to be legally bound by these Terms,
                                 our Privacy Policy, and any additional policies referenced herein.
                             </p>
 
                             <hr>
 
                             <h3>2. Eligibility</h3>
-                            <p>To use the App, you must:</p>
+                            <p>To use the Website, you must:</p>
                             <ul>
                                 <li>Be at least 18 years old</li>
                                 <li>Be legally capable of entering into binding contracts under Indian law</li>
@@ -84,8 +83,8 @@
                             <ul>
                                 <li>Provide accurate, truthful, and updated information</li>
                                 <li>Maintain confidentiality of login details</li>
-                                <li>Use the App only for lawful purposes</li>
-                                <li>Not misuse, reverse engineer, or tamper with the App</li>
+                                <li>Use the Website only for lawful purposes</li>
+                                <li>Not misuse, reverse engineer, or tamper with the Website</li>
                             </ul>
 
                             <hr>
@@ -118,7 +117,7 @@
                             <hr>
 
                             <h3>7. Third-Party Services</h3>
-                            <p>The App may include integrations with:</p>
+                            <p>The Website may include integrations with:</p>
                             <ul>
                                 <li>Banks and NBFCs</li>
                                 <li>KYC/verification providers</li>
@@ -146,7 +145,7 @@
                                 <li>Upload false or forged documents</li>
                                 <li>Impersonate another person</li>
                                 <li>Engage in fraud or illegal activities</li>
-                                <li>Disrupt or interfere with App functionality</li>
+                                <li>Disrupt or interfere with Website functionality</li>
                                 <li>Introduce malware or harmful code</li>
                             </ul>
                             <p>Violation may result in suspension or legal action.</p>
@@ -170,7 +169,7 @@
                                 <li>Third-party errors</li>
                                 <li>Indirect or consequential damages</li>
                             </ul>
-                            <p>Your use of the App is at your own risk.</p>
+                            <p>Your use of the Website is at your own risk.</p>
 
                             <hr>
 
@@ -194,7 +193,7 @@
 
                             <h3>14. Changes to Terms</h3>
                             <p>
-                                We may update these Terms at any time. Continued use of the App implies acceptance of updates.
+                                We may update these Terms at any time. Continued use of the Website implies acceptance of updates.
                             </p>
 
                             <hr>

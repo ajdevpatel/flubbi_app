@@ -49,7 +49,7 @@
 
                     <ul class="fl-ticks">
                         <li><i class="bi bi-check-circle-fill"></i> Eligibility check in under 2 minutes</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Apply yourself, or let a Flubbi agent handle it</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Apply yourself, or Hire A Loan Agent</li>
                         <li><i class="bi bi-check-circle-fill"></i> Your progress is saved at every step</li>
                     </ul>
 

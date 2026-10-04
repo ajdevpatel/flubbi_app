@@ -32,11 +32,11 @@
                             <p>
                                 This Refund &amp; Cancellation Policy (“Policy”) explains how
                                 {{ config('web.store_data.company_name') }} (“we”, “us”, “our”) handles cancellations and refunds for
-                                services offered through the {{ config('web.store_data.app_name') }} mobile application (“App”).
+                                services offered through the {{ config('web.store_data.app_name') }} website (“Website”).
                             </p>
 
                             <p>
-                                By using our App or purchasing any services, you agree to this Policy.
+                                By using our Website or purchasing any services, you agree to this Policy.
                             </p>
 
                             <hr>
@@ -161,7 +161,7 @@
                             <h3>8. Amendments to Policy</h3>
                             <p>
                                 We may update or modify this Policy at any time.
-                                Changes will be posted in the App along with the updated “Last Updated” date.
+                                Changes will be posted on the Website along with the updated “Last Updated” date.
                             </p>
 
 

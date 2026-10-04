@@ -30,13 +30,13 @@
                             <hr>
 
                             <p>
-                                This Disclaimer (“Disclaimer”) applies to the use of the {{ config('web.store_data.app_name') }} mobile application
-                                (“App”)
+                                This Disclaimer (“Disclaimer”) applies to the use of the {{ config('web.store_data.app_name') }} website
+                                (“Website”)
                                 operated by {{ config('web.store_data.company_name') }} (“we”, “us”, “our”).
                             </p>
 
                             <p>
-                                By accessing or using the App, you agree to this Disclaimer.
+                                By accessing or using the Website, you agree to this Disclaimer.
                             </p>
 
                             <hr>
@@ -109,7 +109,7 @@
                             <hr>
 
                             <h3>5. Third-Party Links &amp; Services</h3>
-                            <p>The App may contain links to:</p>
+                            <p>The Website may contain links to:</p>
                             <ul>
                                 <li>Banks/NBFC websites</li>
                                 <li>Third-party APIs</li>
@@ -144,7 +144,7 @@
 
                             <h3>7. No Professional Advice</h3>
                             <p>
-                                Information provided in the App is for general educational and informational purposes only.
+                                Information provided on the Website is for general educational and informational purposes only.
                                 It should not be treated as:
                             </p>
                             <ul>
@@ -154,7 +154,7 @@
                                 <li>Tax planning advice</li>
                             </ul>
                             <p>
-                                Any decisions made based on App content are at your own risk.
+                                Any decisions made based on Website content are at your own risk.
                             </p>
 
                             <hr>
@@ -172,7 +172,7 @@
                                 <li>Loss of profits, data, or business opportunities</li>
                             </ul>
                             <p>
-                                Your use of the App is at your sole risk.
+                                Your use of the Website is at your sole risk.
                             </p>
 
                             <hr>
@@ -183,7 +183,7 @@
                                 losses, and liabilities arising out of:
                             </p>
                             <ul>
-                                <li>Misuse of the App</li>
+                                <li>Misuse of the Website</li>
                                 <li>Submission of incorrect information</li>
                                 <li>Violation of Terms &amp; Conditions</li>
                                 <li>Fraudulent activities</li>
@@ -194,7 +194,7 @@
                             <h3>10. Changes to Disclaimer</h3>
                             <p>
                                 We may update or amend this Disclaimer at any time.
-                                Updates will be posted in the App with a revised “Last Updated” date.
+                                Updates will be posted on the Website with a revised “Last Updated” date.
                             </p>
 
                             <hr>
