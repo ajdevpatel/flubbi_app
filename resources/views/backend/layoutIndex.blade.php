@@ -154,7 +154,7 @@
                                         document.write(new Date().getFullYear());
                                     </script>
                                     , made with ❤️ by
-                                    <a href="#" target="_blank" class="footer-link text-primary fw-medium">AK</a>
+                                    <a href="https://wa.me/918530241214" target="_blank" rel="noopener" class="footer-link text-primary fw-medium">Edigitrix</a>
                                 </div>
                                 <div class="d-none d-lg-inline-block">
                                     @php

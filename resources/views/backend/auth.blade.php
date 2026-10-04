@@ -101,8 +101,8 @@
                 </div>
                 <p class="text-center">
                   <span>Made with ❤️ By </span>
-                  <a href="https://www.edigitrix.com/" target="_blank">
-                    <span>Edigitrix.com</span>
+                  <a href="https://wa.me/918530241214" target="_blank" rel="noopener">
+                    <span>Edigitrix</span>
                   </a>
                 </p>
               </form>

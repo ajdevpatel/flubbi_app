@@ -454,7 +454,7 @@
                 <div class="col-md-12 text-center">
                     <div class="footer-bottom-content">
                         <div class="footer-bottom-content-copy style_two">
-                            <p>Copyright © 2025 by {{ config('web.store_data.company_name') }}. All Rights Reserved.</p>
+                            <p>Copyright © 2025 by {{ config('web.store_data.company_name') }}. All Rights Reserved. | Developed by <a href="https://wa.me/918530241214" target="_blank" rel="noopener" style="color: inherit; font-weight: 600;">Edigitrix</a></p>
                         </div>
                     </div>
                 </div>
