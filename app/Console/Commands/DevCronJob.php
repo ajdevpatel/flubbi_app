@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\PaymentReminderService;
 use App\Services\RemarketingService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -65,6 +66,18 @@ class DevCronJob extends Command
                     "bucket" => $name . "-" . $bucket,
                     "error" => $e->getMessage(),
                 ]);
+            }
+        }
+
+        if (!$this->option("dry") && null === $channel && null === $day) {
+            try {
+                $reminders = (new PaymentReminderService())->run();
+                $this->line("reminders -> sent " . $reminders["sent"] . " of " . $reminders["processed"] . " paid applications");
+                Log::info("payment reminders finished", $reminders);
+            } catch (Throwable $e) {
+                ++$failed;
+                $this->error("reminders failed: " . $e->getMessage());
+                Log::error("payment reminders cron failed", ["error" => $e->getMessage()]);
             }
         }
 

@@ -12,6 +12,17 @@ return [
         7 => "document_pending",
     ],
 
+    "reminders" => [
+        "enabled" => (int) env("WA_REMINDERS_ENABLED", 1),
+        "start_from" => env("WA_REMINDERS_START", ""),
+        "schedule" => [
+            ["event" => "document_submission", "after_minutes" => 30, "window_minutes" => 1440],
+            ["event" => "verification_reminder", "after_minutes" => 1440, "window_minutes" => 1440],
+            ["event" => "loan_under_review", "after_minutes" => 2880, "window_minutes" => 1440],
+            ["event" => "document_pending", "after_minutes" => 4320, "window_minutes" => 2880],
+        ],
+    ],
+
     "events" => [
         "payment_failed" => [
             "enabled" => (int) env("WA_PAYMENT_FAILED_ENABLED", 1),
@@ -61,7 +72,7 @@ return [
             "template" => env("WA_DOCUMENT_PENDING_TEMPLATE", "documents_pending_reminder_01"),
             "language" => "en",
             "media_url" => env("WA_DOCUMENT_PENDING_MEDIA_URL", ""),
-            "body_params" => ["name", "application_no", "loan_kind", "executive_contact"],
+            "body_params" => ["name", "application_no", "loan_amount", "executive_contact"],
             "message" => "Dear {{1}},\n\nYour {{3}} loan application is currently on hold due to pending document submission.\n\nPlease provide the required documents at the earliest to avoid delays in processing.\n\nApplication Number: {{2}}\n\nFor assistance, Please Contact our Loan Executive {{4}}.\n\nThank you,\nFlubbi Finech LLP",
             "dedupe_seconds" => 30,
         ],
@@ -72,6 +83,22 @@ return [
             "media_url" => env("WA_LOAN_UNDER_REVIEW_MEDIA_URL", ""),
             "body_params" => ["name", "application_no"],
             "message" => "Dear {{1}},\n\nYour loan application of (Reference: {{2}}) has successfully moved to the next stage of processing.\n\nOur team will contact you if any additional information or documents are required.\n\nThank you,\nFlubbi Fintech LLP",
+            "dedupe_seconds" => 30,
+        ],
+        "document_submission" => [
+            "enabled" => (int) env("WA_DOC_SUBMISSION_ENABLED", 1),
+            "template" => env("WA_DOC_SUBMISSION_TEMPLATE", "document_submission_reminder_self"),
+            "language" => "en",
+            "media_url" => env("WA_DOC_SUBMISSION_MEDIA_URL", ""),
+            "body_params" => ["name", "application_no"],
+            "dedupe_seconds" => 30,
+        ],
+        "verification_reminder" => [
+            "enabled" => (int) env("WA_VERIFICATION_REMINDER_ENABLED", 1),
+            "template" => env("WA_VERIFICATION_REMINDER_TEMPLATE", "verification_auto_reminder"),
+            "language" => "en",
+            "media_url" => env("WA_VERIFICATION_REMINDER_MEDIA_URL", ""),
+            "body_params" => ["name", "application_no", "whatsapp_contact", "support_email"],
             "dedupe_seconds" => 30,
         ],
     ],
