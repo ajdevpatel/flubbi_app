@@ -9,6 +9,21 @@ php artisan clear-compiled
 php artisan optimize
 
 
+
+
+php artisan optimize:clear
+&& php artisan config:clear
+&& php artisan config:cache
+&& php artisan route:clear
+&& php artisan route:cache
+&& php artisan view:clear
+&& php artisan cache:clear
+&& php artisan clear-compiled
+&& php artisan optimize
+
+
+
+
 * * * * * cd /path/to/flubbi_app && php artisan schedule:run >> /dev/null 2>&1
 
 

@@ -12,9 +12,9 @@ return [
     "phone" => "+91 97255 48209",
     "company_mail" => "flubbifintech@gmail.com",
     "support_mail" => "support@flubbi.in",
-    "location" => "C-1, 703, Pragati IT Park, Near A R Mall, Mota Varachha, Surat 394101 Gujarat India",
-    "location_gmap_url" => "https://www.google.com/maps/search/?api=1&query=Pragati%20IT%20Park%2C%20Near%20A%20R%20Mall%2C%20Mota%20Varachha%2C%20Surat%20394101",
-    "location_google_maps_embed" => "https://www.google.com/maps?q=Pragati%20IT%20Park%2C%20Near%20A%20R%20Mall%2C%20Mota%20Varachha%2C%20Surat%20394101&output=embed",
+    "location" => "12, Akshardham Society, Near Matrushri Farm, Panvel Point, Mota Varachha, Surat Gujarat 394101",
+    "location_gmap_url" => "https://www.google.com/maps/search/?api=1&query=Akshardham%20Society%2C%20Near%20Matrushri%20Farm%2C%20Panvel%20Point%2C%20Mota%20Varachha%2C%20Surat%20394101",
+    "location_google_maps_embed" => "https://www.google.com/maps?q=Akshardham%20Society%2C%20Near%20Matrushri%20Farm%2C%20Panvel%20Point%2C%20Mota%20Varachha%2C%20Surat%20394101&output=embed",
     "copyright" => "Copyright © <span>" . date("Y") . "</span> <a href='" . $_ENV["APP_URL"] . "' class='secondary_color'>" . $_ENV["APP_NAME"] . "</a>.",
     "footer_about_us_text" => "Flubbi provides digital personal-loan consultancy services by facilitating user onboarding, profile assessment, and connecting borrowers with RBI-regulated lending partners. We operate strictly as a technology and service provider, not as a lender.",
     "social_links" => [

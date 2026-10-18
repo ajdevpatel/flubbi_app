@@ -21,7 +21,7 @@ return [
     "mail" => "flubbi@gmail.com",
     "phone" => "+91 97255 48209",
     "wapp_phone" => "+91 97255 48209",
-    "location" => "C-1, 703, Pragati IT Park, Near A R Mall, Mota Varachha, Surat 394101 Gujarat India",
+    "location" => "Akshardham Society, Near Matrushri Farm, Panvel Point, Mota Varachha, Surat Gujarat 394101",
     // "phone" => "+91 81603 00254",
     // "wapp_phone" => "+91 81603 00254",
     // "location" => " 71, Omkar Bunglows, Beside Adarsh Nagar Gate, Amroli, Surat, Gujarat - 394107",
