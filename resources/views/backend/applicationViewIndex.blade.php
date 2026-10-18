@@ -166,6 +166,36 @@
             </div>
         </div>
 
+        @if ('self' === $data->login_type && 1 == (int) $data->payment_status)
+            <div class="col-12 mt-4">
+                <div class="card border border-primary">
+                    <h5 class="card-header"> Lending Partner <small class="text-muted fw-normal">(Self Login)</small></h5>
+                    <div class="card-body">
+                        @if (!empty($data->bank_name))
+                            <div class="d-flex align-items-center flex-wrap gap-3">
+                                @if (!empty($data->bank_logo))
+                                    <img src="{{ asset('banks/' . $data->bank_logo) }}" alt="{{ $data->bank_name }}"
+                                        style="height: 48px; width: auto; max-width: 160px; object-fit: contain; background: #fff; padding: 4px 8px; border: 1px solid #e4e6e8; border-radius: 6px;">
+                                @endif
+                                <div class="me-auto">
+                                    <small class="text-muted d-block">Bank selected by the customer</small>
+                                    <strong class="fs-5">{{ ucwords($data->bank_name) }}</strong>
+                                </div>
+                                @if (!empty(trim((string) $data->bank_link)))
+                                    <a href="{{ trim($data->bank_link) }}" target="_blank" rel="noopener"
+                                        class="btn btn-label-primary waves-effect">
+                                        <span class="ti-xs ti ti-building-bank me-2"></span>Open bank link
+                                    </a>
+                                @endif
+                            </div>
+                        @else
+                            <p class="mb-0 text-muted">Payment received, but the customer has not selected a lending partner yet.</p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <div class="col-12 col-md-5 mt-4">
             <div class="card border border-primary">
                 <h5 class="card-header"> Documents </h5>

@@ -254,11 +254,16 @@ class ApplicationsController extends Controller
             "states.name as u_state",
             DB::raw("IF(loan_applications.credit_card_usage = 1, 'Yes', 'No') as credit_card_usage"),
             DB::raw("IF(loan_applications.employment_type = 'salaried','Salaried Person','Self Employed Person') as user_type_label"),
+            "self_login_banks.label as bank_name",
+            "self_login_banks.logo as bank_logo",
+            DB::raw("IF(loan_applications.loan_type_id = 2, self_login_banks.bl_link, self_login_banks.pl_link) as bank_link"),
         ])->Join("users", function ($join) {
             $join->on("users.id", "=", "loan_applications.user_id");
         })->leftJoin("states", function ($join) {
             $join->on("states.id", "=", "users.state_id")
                 ->where("states.status", "0");
+        })->leftJoin("self_login_banks", function ($join) {
+            $join->on("self_login_banks.id", "=", "loan_applications.self_login_bank_id");
         })->leftJoin("loan_status", function ($join) {
             $join->on("loan_status.id", "=", "loan_applications.status");
         })->leftJoin("loan_types", function ($join) {
