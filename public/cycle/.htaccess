@@ -1,0 +1,4 @@
+# Block direct access to the schedule JSON and the logs; only index.php is reachable.
+<FilesMatch "\.(json|log)$">
+    Require all denied
+</FilesMatch>

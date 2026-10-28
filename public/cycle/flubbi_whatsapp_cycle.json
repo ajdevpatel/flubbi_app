@@ -1,0 +1,240 @@
+{
+    "schedule": [
+        {
+            "day": 1,
+            "time": "08:45",
+            "template": "prefer16_10_26",
+            "params": [
+                "name",
+                "application_no",
+                "amount",
+                "applied_date",
+                "text:Pre-Approved"
+            ]
+        },
+        {
+            "day": 1,
+            "time": "13:45",
+            "template": "prefer_16_10_26",
+            "params": [
+                "name",
+                "application_no",
+                "amount_plain",
+                "applied_date"
+            ]
+        },
+        {
+            "day": 1,
+            "time": "19:45",
+            "template": "herofincorp",
+            "params": [
+                "name",
+                "amount_plain",
+                "application_no"
+            ]
+        },
+        {
+            "day": 2,
+            "time": "09:00",
+            "template": "tata_capital",
+            "params": [
+                "name",
+                "amount_plain",
+                "applied_date",
+                "text:Approved"
+            ]
+        },
+        {
+            "day": 2,
+            "time": "14:00",
+            "template": "ln_offer_16_10_26",
+            "params": [
+                "amount",
+                "applied_date"
+            ]
+        },
+        {
+            "day": 2,
+            "time": "18:30",
+            "template": "herofincorp",
+            "params": [
+                "name",
+                "amount_plain",
+                "application_no"
+            ]
+        },
+        {
+            "day": 3,
+            "time": "09:15",
+            "template": "utility_offer",
+            "params": [
+                "name",
+                "amount",
+                "application_no"
+            ]
+        },
+        {
+            "day": 3,
+            "time": "14:15",
+            "template": "reminder1",
+            "params": [
+                "name",
+                "amount",
+                "application_no"
+            ]
+        },
+        {
+            "day": 3,
+            "time": "20:30",
+            "template": "getoffer22_06_26",
+            "params": [
+                "name",
+                "application_no",
+                "amount_plain",
+                "text:Approved"
+            ]
+        },
+        {
+            "day": 5,
+            "time": "09:30",
+            "template": "eligibility02",
+            "params": [
+                "name",
+                "application_no",
+                "application_no"
+            ]
+        },
+        {
+            "day": 5,
+            "time": "15:15",
+            "template": "eligibility_send",
+            "params": [
+                "name",
+                "amount_plain",
+                "application_no"
+            ]
+        },
+        {
+            "day": 5,
+            "time": "19:30",
+            "template": "eligibility_03",
+            "params": [
+                "name",
+                "application_no",
+                "loan_type"
+            ]
+        },
+        {
+            "day": 7,
+            "time": "08:30",
+            "template": "offer_send",
+            "params": [
+                "name",
+                "application_no",
+                "loan_type"
+            ]
+        },
+        {
+            "day": 7,
+            "time": "13:15",
+            "template": "reminder1",
+            "params": [
+                "name",
+                "amount",
+                "application_no"
+            ]
+        },
+        {
+            "day": 7,
+            "time": "21:15",
+            "template": "utility_offer",
+            "params": [
+                "name",
+                "amount",
+                "application_no"
+            ]
+        },
+        {
+            "day": 10,
+            "time": "10:00",
+            "template": "prefer_16_10_26",
+            "params": [
+                "name",
+                "application_no",
+                "amount_plain",
+                "applied_date"
+            ]
+        },
+        {
+            "day": 10,
+            "time": "14:30",
+            "template": "reminder1",
+            "params": [
+                "name",
+                "amount",
+                "application_no"
+            ]
+        },
+        {
+            "day": 10,
+            "time": "22:00",
+            "template": "eligibility02",
+            "params": [
+                "name",
+                "application_no",
+                "application_no"
+            ]
+        },
+        {
+            "day": 15,
+            "time": "10:30",
+            "template": "herofincorp",
+            "params": [
+                "name",
+                "amount_plain",
+                "application_no"
+            ]
+        },
+        {
+            "day": 15,
+            "time": "17:00",
+            "template": "tata_capital",
+            "params": [
+                "name",
+                "amount_plain",
+                "applied_date",
+                "text:Approved"
+            ]
+        },
+        {
+            "day": 21,
+            "time": "08:15",
+            "template": "eligibility_send",
+            "params": [
+                "name",
+                "amount_plain",
+                "application_no"
+            ]
+        },
+        {
+            "day": 21,
+            "time": "21:15",
+            "template": "eligibility_03",
+            "params": [
+                "name",
+                "application_no",
+                "loan_type"
+            ]
+        },
+        {
+            "day": 31,
+            "time": "12:30",
+            "template": "offer_send",
+            "params": [
+                "name",
+                "application_no",
+                "loan_type"
+            ]
+        }
+    ]
+}

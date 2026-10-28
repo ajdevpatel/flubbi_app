@@ -251,6 +251,7 @@ class LoanServiceController extends Controller
         $partners = DB::table("self_login_banks")
             ->select(["id", "label", "logo"])
             ->where("status", 1)
+            ->orderBy("sort_order", "asc")
             ->orderBy("label", "asc")
             ->limit(8)
             ->get();
@@ -298,6 +299,7 @@ class LoanServiceController extends Controller
         $partners = DB::table("self_login_banks")
             ->select(["id", "label", "logo"])
             ->where("status", 1)
+            ->orderBy("sort_order", "asc")
             ->orderBy("label", "asc")
             ->limit(12)
             ->get();
@@ -1216,6 +1218,8 @@ class LoanServiceController extends Controller
         $banks = DB::table("self_login_banks")
             ->select(["id", "label", "logo", $link_col . " as link"])
             ->where("status", 1)
+            ->where($link_col, "!=", "")
+            ->orderBy("sort_order", "asc")
             ->orderBy("label", "asc")
             ->get();
 
