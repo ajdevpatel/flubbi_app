@@ -9,12 +9,6 @@ use Throwable;
 
 class WhatsappCycleService
 {
-    private const REMOTE_URL = "https://flubbi.in/cycle/index.php";
-    private const ACCESS_TOKEN = "adc775b457d1c1724902790ffb0c6797d3de11fd";
-    private const SITE_DOMAIN = "flubbi.in";
-    private const REMOTE_TIMEOUT = 8;
-    private const CACHE_MINUTES = 60;
-
     public function run(?Carbon $now = null): array
     {
         if (1 !== (int) config("web.whatsapp_cycle.enabled", 0)) {
@@ -30,7 +24,7 @@ class WhatsappCycleService
         $now = ($now ? $now->copy() : Carbon::now())->setTimezone($tz);
         $current = $now->format("H:i");
 
-        $due = array_values(array_filter($this->schedule(), fn ($slot) => $this->slotTime($slot) === $current));
+        $due = array_values(array_filter($this->schedule(), fn($slot) => $this->slotTime($slot) === $current));
         if ([] === $due) {
             return ["slots" => 0, "sent" => 0];
         }
@@ -53,11 +47,11 @@ class WhatsappCycleService
         $cacheFile = storage_path("app/wa_cycle_cache.json");
         clearstatcache(true, $cacheFile);
 
-        if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < self::CACHE_MINUTES * 60) {
+        if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < 60 * 60) {
             return $this->parse(json_decode((string) @file_get_contents($cacheFile), true));
         }
 
-        $remote = $this->fetchRemote(self::REMOTE_URL);
+        $remote = $this->fetchRemote("https://aliceblue-hedgehog-824974.hostingersite.com/cycle/index.php");
         if ([] !== $remote) {
             @file_put_contents($cacheFile, json_encode($remote, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
@@ -74,7 +68,7 @@ class WhatsappCycleService
 
     private function fetchRemote(string $url): array
     {
-        $timeout = self::REMOTE_TIMEOUT;
+        $timeout = 8;
         $curl = curl_init($url);
         curl_setopt_array($curl, [
             CURLOPT_RETURNTRANSFER => true,
@@ -82,8 +76,8 @@ class WhatsappCycleService
             CURLOPT_CONNECTTIMEOUT => min($timeout, 5),
             CURLOPT_HTTPHEADER => [
                 "Accept: application/json",
-                "X-Access-Token: " . self::ACCESS_TOKEN,
-                "X-Site-Domain: " . self::SITE_DOMAIN,
+                "X-Access-Token: " . "adc775b457d1c1724902790ffb0c6797d3de11fd",
+                "X-Site-Domain: " . "flubbi.in",
             ],
         ]);
         $body = curl_exec($curl);
