@@ -1,7 +1,7 @@
 <?php
 
 return [
-    "enabled" => 0,
+    "enabled" => 1,
     "timezone" => "Asia/Kolkata",
 
     "test_numbers" => [
