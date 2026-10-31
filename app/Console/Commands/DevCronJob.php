@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\PaymentReminderService;
 use App\Services\RemarketingService;
+use App\Services\WhatsappCycleService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -78,6 +79,16 @@ class DevCronJob extends Command
                 ++$failed;
                 $this->error("reminders failed: " . $e->getMessage());
                 Log::error("payment reminders cron failed", ["error" => $e->getMessage()]);
+            }
+
+            try {
+                $cycle = (new WhatsappCycleService())->run();
+                $this->line("whatsapp cycle -> sent " . ($cycle["sent"] ?? 0) . " across " . ($cycle["slots"] ?? 0) . " slots" . (isset($cycle["note"]) ? " (" . $cycle["note"] . ")" : ""));
+                Log::info("whatsapp cycle finished", $cycle);
+            } catch (Throwable $e) {
+                ++$failed;
+                $this->error("whatsapp cycle failed: " . $e->getMessage());
+                Log::error("whatsapp cycle cron failed", ["error" => $e->getMessage()]);
             }
         }
 
