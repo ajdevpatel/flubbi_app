@@ -41,13 +41,12 @@ class DevCronJob extends Command
             ? $this->dueBuckets($channel)
             : $this->forcedBuckets($channel, (int) $day);
 
+        $failed = 0;
+
         if ([] === $due) {
             $this->line("nothing due");
-
-            return self::SUCCESS;
         }
 
-        $failed = 0;
         foreach ($due as [$name, $bucket]) {
             if ($this->option("dry")) {
                 $this->line("would run " . $name . "-" . $bucket);
