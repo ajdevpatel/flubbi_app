@@ -22,9 +22,9 @@
                     <div class="d-flex align-content-center flex-wrap gap-3">
                         <div class="col-12">
                             <div class="input-group input-daterange" id="from-to-date">
-                                <input type="date" id="fdate" placeholder="MM/DD/YYYY" class="form-control" value="@php echo config('web.webapp.filter_from_date'); @endphp" />
+                                <input type="date" id="fdate" placeholder="MM/DD/YYYY" class="form-control" value="{{ today()->subDays(7)->format('Y-m-d') }}" />
                                 <span class="input-group-text">To</span>
-                                <input type="date" id="tdate" placeholder="MM/DD/YYYY" class="form-control" value="@php echo config('web.webapp.filter_to_date'); @endphp" />
+                                <input type="date" id="tdate" placeholder="MM/DD/YYYY" class="form-control" value="{{ today()->format('Y-m-d') }}" />
                                 <button class="btn btn-primary me-sm-3 me-1 waves-effect waves-light"
                                     id="filter_btn_date">Apply</button>
                             </div>

@@ -34,7 +34,7 @@
                         <div class="col-12">
                             <div class="input-group input-daterange" id="from-to-date">
                                 <input type="date" id="fdate_two" placeholder="MM/DD/YYYY" class="form-control"
-                                    value="@php echo today()->format('Y-m-d'); @endphp" />
+                                    value="{{ today()->subDays(7)->format('Y-m-d') }}" />
                                 <span class="input-group-text">To</span>
                                 <input type="date" id="tdate_two" placeholder="MM/DD/YYYY" class="form-control"
                                     value="@php

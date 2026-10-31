@@ -13,8 +13,8 @@ class LeadsController extends Controller
     public function leadEnquiryIndex(Request $request)
     {
         if ($request->ajax()) {
-            $fdate = config("web.webapp.filter_from_date");
-            $tdate = config("web.webapp.filter_to_date");
+            $fdate = today()->subDays(7)->format("Y-m-d");
+            $tdate = today()->format("Y-m-d") . " 23:59:59";
             if ($request->has("fdate") && !empty($request->fdate)) {
                 $fdate = $request->fdate;
             }
