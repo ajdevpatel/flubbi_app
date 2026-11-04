@@ -330,6 +330,8 @@ class ApplicationsController extends Controller
             "loan_type" => $loan_type,
             "loan_kind" => trim(preg_replace("/\s+loan$/i", "", $loan_type) ?? $loan_type),
             "executive_contact" => (string) (config("web.whatsapp.executive_contact") ?: config("web.store_data.phone", "")),
+            "whatsapp_contact" => (string) config("web.whatsapp.whatsapp_contact", ""),
+            "support_email" => (string) config("web.whatsapp.support_email", ""),
             "remarks" => $remarks,
         ];
     }

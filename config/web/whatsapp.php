@@ -3,12 +3,16 @@
 return [
     "timeout_seconds" => 8,
     "executive_contact" => env("WA_LOAN_EXECUTIVE_CONTACT") ?: "+91 93283 53154",
+    "whatsapp_contact" => env("WA_SUPPORT_WHATSAPP") ?: "9328353154",
+    "support_email" => env("WA_SUPPORT_EMAIL") ?: "support@flubbi.in",
 
     "status_events" => [
+        1 => "verification_reminder",
         2 => "loan_under_review",
         3 => "loan_approved",
         4 => "loan_rejected",
         5 => "loan_disbursed",
+        6 => "loan_closed_otp",
         7 => "document_pending",
     ],
 
@@ -51,11 +55,11 @@ return [
         ],
         "loan_rejected" => [
             "enabled" => (int) env("WA_LOAN_REJECTED_ENABLED", 1),
-            "template" => env("WA_LOAN_REJECTED_TEMPLATE", "application_rejected_lender"),
+            "template" => env("WA_LOAN_REJECTED_TEMPLATE", "app_rejected_lender_criteria_not_match"),
             "language" => "en",
             "media_url" => env("WA_LOAN_REJECTED_MEDIA_URL", ""),
-            "body_params" => ["name", "application_no"],
-            "message" => "Dear {{1}},\n\nThis is an update regarding your loan application (Ref: {{2}}).\n\nAfter reviewing the information provided, your application is currently not eligible for approval as per the lender's assessment criteria.\n\nThank you for your interest.\n\nRegards,\nFlubbi Fintech LLP",
+            "body_params" => ["name", "application_no", "executive_contact"],
+            "message" => "Dear {{1}},\n\nWe regret to inform you that your loan application (Reference ID: {{2}}) could not be approved based on the assessment completed by the lender Bank/NBFC's.\n\nFor any queries regarding your application, please contact our support team on {{3}}.\n\nYou may Re-Apply after 3 months.\n\nThank you,\nFlubbi Fintech LLP",
             "dedupe_seconds" => 30,
         ],
         "loan_disbursed" => [
@@ -78,11 +82,11 @@ return [
         ],
         "loan_under_review" => [
             "enabled" => (int) env("WA_LOAN_UNDER_REVIEW_ENABLED", 1),
-            "template" => env("WA_LOAN_UNDER_REVIEW_TEMPLATE", "applicaiton_under_process_remarks"),
+            "template" => env("WA_LOAN_UNDER_REVIEW_TEMPLATE", "document_review_01"),
             "language" => "en",
             "media_url" => env("WA_LOAN_UNDER_REVIEW_MEDIA_URL", ""),
-            "body_params" => ["name", "application_no"],
-            "message" => "Dear {{1}},\n\nYour loan application of (Reference: {{2}}) has successfully moved to the next stage of processing.\n\nOur team will contact you if any additional information or documents are required.\n\nThank you,\nFlubbi Fintech LLP",
+            "body_params" => ["name", "loan_amount"],
+            "message" => "Dear {{1}},\n\nWe would like to inform you that your {{2}} loan application is currently under review.\n\nOur team is verifying the information provided.\n\nWe will update you once the review process is completed.\n\nThank you,\nFlubbi Fintech LLP",
             "dedupe_seconds" => 30,
         ],
         "document_submission" => [
@@ -99,6 +103,16 @@ return [
             "language" => "en",
             "media_url" => env("WA_VERIFICATION_REMINDER_MEDIA_URL", ""),
             "body_params" => ["name", "application_no", "whatsapp_contact", "support_email"],
+            "message" => "Dear {{1}},\n\nWe are awaiting the documents required to complete the verification of your loan application.\n\nPending documents may include:\n• Identity Proof : PAN, Aadhar, Selfy\n• Address Proof : Electiricy Bill, Gas Bill, Aadhar Card\n• Income Proof: Form 16, Salary Sleep, ITR, Bank Statement\n\nReference ID: {{2}}\n\nKindly share the above documents to our Executive on whatsapp No {{3}}\nor Email us on: {{4}}\n\nRegards,\nFlubbi Fintech LLP",
+            "dedupe_seconds" => 30,
+        ],
+        "loan_closed_otp" => [
+            "enabled" => (int) env("WA_LOAN_CLOSED_OTP_ENABLED", 1),
+            "template" => env("WA_LOAN_CLOSED_OTP_TEMPLATE", "otp_not_given_remarks"),
+            "language" => "en",
+            "media_url" => env("WA_LOAN_CLOSED_OTP_MEDIA_URL", ""),
+            "body_params" => ["executive_contact"],
+            "message" => "Dear Customer,\n\nOur company executive asked you for the OTP for your loan otp varification process but you denied to share the OTP.\n\nAs per bank/NBFC rules, OPT is a must for the loan process.\nSo, if you wish to share the OTP for your loan process,\n\nKindly contact our executive on {{1}} in the next 24-48 hours else your file will be automatically rejected from our system.\n\nYou can call us between 10 AM to 5 PM (Monday to Saturday - only business days).\n\nThank you,\nFlubbi Fintech LLP",
             "dedupe_seconds" => 30,
         ],
     ],
