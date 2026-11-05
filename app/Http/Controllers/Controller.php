@@ -471,141 +471,101 @@ abstract class Controller
 
 
     ##################################################################################
-    public function fbConversionCURL($data)
+    public function fbConversionCURL($in)
     {
         if (app()->environment("local")) {
             return true;
         }
 
         $fbaccesstoken = DB::table("web_options")->where("op_key", "facebook_access_token")->value("op_value");
-        if (!$fbaccesstoken) {
-            return false;
-        }
         $eventname = DB::table("web_options")->where("op_key", "facebook_event_name")->value("op_value");
-        if (!$eventname) {
-            return false;
-        }
-        $eventid = DB::table("web_options")->where("op_key", "facebook_event_id")->value("op_value");
-        if (!$eventid) {
-            return false;
-        }
         $fbpixel = DB::table("web_options")->where("op_key", "facebook_pixel_key")->value("op_value");
-        if (!$fbpixel) {
+        $testcode = DB::table("web_options")->where("op_key", "facebook_event_id")->value("op_value");
+
+        if (!$fbaccesstoken || !$eventname || !$fbpixel) {
             return false;
         }
-        /*
-{
-    "data": [
-        {
-            "event_name": "Purchase",
-            "event_time": 1737639743,
-            "action_source": "website",
-            "user_data": {
-                "em": [
-                    "7b17fb0bd173f625b58636fb796407c22b3d16fc78302d79f0fd30c2fc2fc068"
-                ],
-                "ph": [
-                    null
-                ]
-            },
-            "custom_data": {
-                "currency": "USD",
-                "value": "142.52"
-            },
-            "original_event_data": {
-                "event_name": "Purchase",
-                "event_time": 1737639743
-            }
+
+        $event = [
+            "event_name" => $eventname,
+            "event_time" => time(),
+            "event_id" => (string) ($in["eventid"] ?? ""),
+            "event_source_url" => (string) ($in["sourceurl"] ?? config("app.url")),
+            "action_source" => "website",
+            "user_data" => [],
+            "custom_data" => [],
+        ];
+
+        $fn = strtolower(trim((string) ($in["firstname"] ?? "")));
+        $em = strtolower(trim((string) ($in["email"] ?? "")));
+        $ph = preg_replace("/\D/", "", (string) ($in["mobile"] ?? ""));
+        if (10 === strlen((string) $ph)) {
+            $ph = "91" . $ph;
         }
-    ]
-}
-$in_arr = [
-    "data" => [
-        "action_source" => "website",
-        "event_source_url" => $_ENV["APP_URL"],
-        "event_time" => time(),
-        "event_id" => $eventid,
-        "event_name" => $eventname,
-        "user_data" => [
-            "client_ip_address" => "",
-            "client_user_agent" => "",
-        ],
-        "custom_data" => [
+        $ct = strtolower(preg_replace("/[^a-z0-9]/i", "", (string) ($in["city"] ?? "")));
+        $st = strtolower(preg_replace("/[^a-z0-9]/i", "", (string) ($in["state"] ?? "")));
+
+        if ("" !== $fn) {
+            $event["user_data"]["fn"] = [hash("sha256", $fn)];
+        }
+        if ("" !== $em) {
+            $event["user_data"]["em"] = [hash("sha256", $em)];
+        }
+        if ("" !== (string) $ph) {
+            $event["user_data"]["ph"] = [hash("sha256", $ph)];
+        }
+        if ("" !== $ct) {
+            $event["user_data"]["ct"] = [hash("sha256", $ct)];
+        }
+        if ("" !== $st) {
+            $event["user_data"]["st"] = [hash("sha256", $st)];
+        }
+        $event["user_data"]["country"] = [hash("sha256", "in")];
+
+        if (!empty($in["fbc"])) {
+            $event["user_data"]["fbc"] = (string) $in["fbc"];
+        }
+        if (!empty($in["fbp"])) {
+            $event["user_data"]["fbp"] = (string) $in["fbp"];
+        }
+        if (!empty($_SERVER["REMOTE_ADDR"])) {
+            $event["user_data"]["client_ip_address"] = $_SERVER["REMOTE_ADDR"];
+        }
+        if (!empty($_SERVER["HTTP_USER_AGENT"])) {
+            $event["user_data"]["client_user_agent"] = $_SERVER["HTTP_USER_AGENT"];
+        }
+
+        $value = round((float) ($in["value"] ?? 0), 2);
+        $orderid = (string) ($in["orderid"] ?? "");
+        $event["custom_data"] = [
             "currency" => "INR",
-            "value" => 500.00,
+            "value" => $value,
             "num_items" => 1,
             "content_type" => "product",
-            "order_id" => $data['orderid'],
-            "status" => "registered",
-        ]
-    ]
-];
-*/
+            "order_id" => $orderid,
+            "contents" => [[
+                "id" => "" !== $orderid ? $orderid : "RB" . date("Y"),
+                "quantity" => 1,
+                "item_price" => $value,
+            ]],
+        ];
 
-        $data = $emarr = $pharr = $contents = array();
-        $data["event_time"] = round(microtime(true));
-        $data["event_name"] = $eventname;
-        $data["event_id"] = $eventid;
-        $data["event_source_url"] = $data['sourceurl'];
-
-        $fnarr[] = hash("sha256", $data['firstname']);
-        $data["user_data"]["fn"] = $fnarr;
-
-        $emarr[] = hash("sha256", $data['email']);
-        $data["user_data"]["em"] = $emarr;
-
-        $pharr[] = hash("sha256", $data['mobile']);
-        $data["user_data"]["ph"] = $pharr;
-
-        $ctarr[] = hash("sha256", $data['city']);
-        $data["user_data"]["ct"] = $ctarr;
-
-        $statearr[] = hash("sha256", $data['state']);
-        $data["user_data"]["st"] = $statearr;
-
-        $countryarr[] = hash("sha256", "in");
-        $data["user_data"]["country"] = $countryarr;
-
-        $data["user_data"]["client_ip_address"] = $_SERVER['REMOTE_ADDR'];
-        $data["user_data"]["client_user_agent"] = $_SERVER['HTTP_USER_AGENT'];
-
-        if ($data["fbclid"] != "") {
-            $data["user_data"]["fbc"] = $data["fbclid"];
+        $payload = ["data" => [$event]];
+        if (!empty($testcode)) {
+            $payload["test_event_code"] = (string) $testcode;
         }
-
-        $data["custom_data"]["currency"] = "INR";
-        $data["custom_data"]["value"] = 500.00;
-        $data["custom_data"]["num_items"] = 1;
-        $data["custom_data"]["content_type"] = "product";
-        $data["custom_data"]["order_id"] = $data['orderid'];
-        $data["custom_data"]["status"] = "registered";
-
-        $contents["id"] = "RB" . date("Y");
-        $contents["quantity"] = 1;
-        $contents["item_price"] = 500.00;
-        $data["custom_data"]["contents"] = array($contents);
-        $data["action_source"] = "website";
-
-        $data_json = json_encode(array($data));
-        $fields = array();
-        $fields['access_token'] = $fbaccesstoken;
-        $fields['upload_tag'] = "orders";
-        $fields['data'] = $data_json;
 
         $curl = curl_init();
         curl_setopt_array($curl, array(
-            #Replace with your offline_event_set_id
             CURLOPT_URL => "https://graph.facebook.com/v22.0/" . $fbpixel . "/events?access_token=" . $fbaccesstoken,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
             CURLOPT_TIMEOUT => 30,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => "POST",
-            CURLOPT_POSTFIELDS => http_build_query($fields),
+            CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             CURLOPT_HTTPHEADER => array(
-                "cache-control: no-cache",
-                #"content-type: multipart/form-data",
+                "Content-Type: application/json",
                 "Accept: application/json",
             ),
         ));

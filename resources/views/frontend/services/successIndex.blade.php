@@ -1,5 +1,13 @@
 @extends('frontend.services.stepLayoutIndex')
 
+@if (!empty($fb_purchase) && app()->environment('production'))
+    @push('fbPixel')
+        <script>
+            fbq('track', 'Purchase', { value: {{ (float) $fb_purchase['value'] }}, currency: 'INR' }, { eventID: '{{ $fb_purchase['event_id'] }}' });
+        </script>
+    @endpush
+@endif
+
 @section('stepBody')
     <div class="fl-result fl-result--ok">
         <i class="bi bi-check-circle-fill"></i>

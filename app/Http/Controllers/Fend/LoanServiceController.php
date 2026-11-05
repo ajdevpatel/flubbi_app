@@ -8,6 +8,7 @@ use App\Services\RazorpayService;
 use App\Services\WhatsappNotifyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -1144,7 +1145,44 @@ class LoanServiceController extends Controller
 
         $this->notifyApplicationReceived($loan, self::SERVICES[$type]["label"]);
 
+        $this->trackPurchase($request, $loan, $tz, $payment_id);
+
+        session()->put("fb_purchase", [
+            "event_id" => $payment_id,
+            "value" => (float) $tz->total_amount,
+        ]);
+
         return $this->stepResponse($type, $after_payment, "Payment successful");
+    }
+
+    private function trackPurchase(Request $request, $loan, $tz, string $payment_id): void
+    {
+        try {
+            $user = $this->sessionUser();
+
+            $fbc = (string) ($_COOKIE["_fbc"] ?? "");
+            $fbp = (string) ($_COOKIE["_fbp"] ?? "");
+            $fbclid = (string) $request->input("fbclid", "");
+            if ("" === $fbc && "" !== $fbclid) {
+                $fbc = "fb.1." . (time() * 1000) . "." . $fbclid;
+            }
+
+            $this->fbConversionCURL([
+                "eventid" => $payment_id,
+                "value" => (float) $tz->total_amount,
+                "orderid" => (string) $tz->gateway_transaction_id,
+                "firstname" => (string) ($loan->name ?? ($user->name ?? "")),
+                "email" => (string) ($loan->email ?? ($user->email ?? "")),
+                "mobile" => (string) ($user->phone ?? ""),
+                "city" => (string) ($loan->city ?? ($user->city ?? "")),
+                "state" => "",
+                "sourceurl" => rtrim((string) config("app.url"), "/") . "/",
+                "fbc" => $fbc,
+                "fbp" => $fbp,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning("fb purchase capi failed", ["error" => $e->getMessage()]);
+        }
     }
 
     private function notifyPaymentFailed($loan, $tz, string $reason): void
@@ -1300,12 +1338,16 @@ class LoanServiceController extends Controller
             }
         }
 
+        $fb_purchase = session("fb_purchase");
+        session()->forget("fb_purchase");
+
         return $this->stepView($request, "success", [
             "view" => "successIndex",
             "login_type" => $loan->login_type,
             "application_no" => $loan->application_no,
             "bank" => $bank,
             "bank_link" => $link,
+            "fb_purchase" => $fb_purchase,
         ]);
     }
 
