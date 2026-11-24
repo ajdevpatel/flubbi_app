@@ -28,7 +28,7 @@
             <div class="col-md-6">
                 <div class="fl-field">
                     <label class="fl-field__label" for="city">City <span class="fl-req">*</span></label>
-                    <input class="fl-field__control alphabet" type="text" name="city" id="city" placeholder="e.g. Surat"
+                    <input class="fl-field__control alphabet" type="text" name="city" id="city" placeholder="e.g. Rajkot"
                         maxlength="100" value="{{ $session_user->city ?? '' }}" required>
                 </div>
             </div>

@@ -201,7 +201,7 @@
                             <h3>15. Governing Law & Jurisdiction</h3>
                             <p>
                                 These Terms are governed by the laws of India.
-                                Disputes shall fall under the jurisdiction of courts in Surat, Gujarat, India.
+                                Disputes shall fall under the jurisdiction of courts in Rajkot, Gujarat, India.
                             </p>
 
                             <hr>

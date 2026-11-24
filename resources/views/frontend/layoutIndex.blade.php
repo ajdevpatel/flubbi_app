@@ -234,7 +234,9 @@
                                 <p class="pt-4 text-white">{{ config('web.store_data.company_name') }}</p>
                                 <p class="pt-0 text-white">{{ config('web.store_data.footer_about_us_text') }}</p>
                                 <p class="pt-0 text-white"><strong><i class="bi bi-file-earmark"></i> LLPIN: </strong> {{ config('web.store_data.LLPIN') }}</p>
-                                <p class="pt-0 text-white"><strong><i class="bi bi-file-earmark"></i> GSTIN: </strong> {{ config('web.store_data.GSTIN') }}</p>
+                                @if (config('web.store_data.show_gstin'))
+                                    <p class="pt-0 text-white"><strong><i class="bi bi-file-earmark"></i> GSTIN: </strong> {{ config('web.store_data.GSTIN') }}</p>
+                                @endif
                             </div>
 
                             <div class="contact-info">
@@ -456,7 +458,9 @@
                                         {{ config('web.store_data.location') }}
                                     </a>
                                 </li>
-                                <li><a href="#" target="#" title="GSTIN"><i class="bi bi-file-earmark"></i> GSTIN: {{ config('web.store_data.GSTIN') }}</a></li>
+                                @if (config('web.store_data.show_gstin'))
+                                    <li><a href="#" target="#" title="GSTIN"><i class="bi bi-file-earmark"></i> GSTIN: {{ config('web.store_data.GSTIN') }}</a></li>
+                                @endif
                                 <li><a href="#" target="#" title="LLPIN"><i class="bi bi-file-earmark"></i> LLPIN: {{ config('web.store_data.LLPIN') }}</a></li>
                             </ul>
 

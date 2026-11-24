@@ -159,7 +159,9 @@ class InvoicePdfService
         $this->fitText($pdf, 52, $y, config("web.store_data.phone") . "   " . config("web.store_data.support_mail"), 270, 7.5, false, self::SOFT);
 
         $pdf->textRight(543, 62, "TAX INVOICE", 15, true, self::ACCENT);
-        $pdf->textRight(543, 79, "GSTIN  " . config("web.store_data.GSTIN"), 8, true, self::WHITE);
+        if (config("web.store_data.show_gstin")) {
+            $pdf->textRight(543, 79, "GSTIN  " . config("web.store_data.GSTIN"), 8, true, self::WHITE);
+        }
         $pdf->textRight(543, 91, "LLPIN  " . config("web.store_data.LLPIN"), 8, false, self::SOFT);
     }
 

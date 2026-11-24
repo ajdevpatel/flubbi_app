@@ -21,10 +21,7 @@ return [
     "mail" => "flubbi@gmail.com",
     "phone" => "+91 97255 48209",
     "wapp_phone" => "+91 97255 48209",
-    "location" => "Akshardham Society, Near Matrushri Farm, Panvel Point, Mota Varachha, Surat Gujarat 394101",
-    // "phone" => "+91 81603 00254",
-    // "wapp_phone" => "+91 81603 00254",
-    // "location" => " 71, Omkar Bunglows, Beside Adarsh Nagar Gate, Amroli, Surat, Gujarat - 394107",
+    "location" => "SF 18, 3rd floor, Shrimad Bhawan, Opp. Kanta Stri Vikas Grouh, Debhar Road, Rajkot 360002",
 
     "footer_links" => [
         [
