@@ -153,6 +153,12 @@
                 <div data-i18n="Page 2">Invoice</div>
             </a>
         </li>
+        <li class="menu-item @if (in_array(app('request')->input('menu_route'), ['self-login-banks'])) active @endif">
+            <a href="{{ route('_selfLoginBanksIndex') }}" class="menu-link">
+                <i class="menu-icon tf-icons ti ti-building-bank"></i>
+                <div data-i18n="Page 2"> Self Login Banks </div>
+            </a>
+        </li>
         {{--
         <li class="menu-item @if (in_array(app('request')->input('menu_route'), ['report-gst'])) active @endif">
             <a href="{{ route('_gstReportIndex') }}" class="menu-link">

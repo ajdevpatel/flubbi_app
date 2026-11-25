@@ -1,0 +1,126 @@
+<?php
+
+namespace App\Http\Controllers\Bend;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
+class SelfLoginBanksController extends Controller
+{
+    public function selfLoginBanksIndex(Request $request)
+    {
+        if ($request->ajax() && "POST" === $request->method()) {
+            $table_data = DB::table("self_login_banks")->select([
+                "id as p_id",
+                "label",
+                "logo",
+                "pl_link",
+                "bl_link",
+                "status",
+                "sort_order",
+            ])->orderBy("sort_order", "asc")->orderBy("label", "asc")->get();
+
+            return DataTables::of($table_data)
+                ->addIndexColumn()
+                ->addColumn("logo_img", function ($row) {
+                    if (empty($row->logo)) {
+                        return '<span class="text-muted">No logo</span>';
+                    }
+                    return '<img src="' . asset("banks/" . $row->logo) . '" width="55" class="img-thumbnail">';
+                })
+                ->addColumn("bank", function ($row) {
+                    return "<b>" . e($row->label) . "</b><br><small class='text-muted'>Sort : " . (int) $row->sort_order . "</small>";
+                })
+                ->addColumn("links", function ($row) {
+                    return "<small><b>PL :</b> " . e($row->pl_link) . "<br><b>BL :</b> " . e($row->bl_link) . "</small>";
+                })
+                ->addColumn("status_badge", function ($row) {
+                    if (1 == (int) $row->status) {
+                        return '<span class="badge bg-label-success"><i class="ti ti-square-check"></i> Active </span>';
+                    }
+                    return '<span class="badge bg-label-danger"><i class="ti ti-square-x"></i> De-Active </span>';
+                })
+                ->addColumn("action", function ($row) {
+                    return '<button type="button" class="btn btn-sm btn-primary editBankBtn" data-id="' . (int) $row->p_id . '"><i class="ti ti-edit"></i> Edit</button>';
+                })
+                ->rawColumns(["logo_img", "bank", "links", "status_badge", "action"])
+                ->make(true);
+        }
+
+        return view("backend.selfLoginBanksIndex");
+    }
+
+    public function selfLoginBanksStore(Request $request)
+    {
+        if ($request->ajax() && "PUT" === $request->method()) {
+            Validator::make($request->all(), [
+                "id" => "nullable|exists:self_login_banks,id",
+                "label" => "required|string|max:255",
+                "pl_link" => "required|string",
+                "bl_link" => "required|string",
+                "status" => "required|in:0,1",
+                "sort_order" => "required|integer|min:0",
+                "logo" => ($request->filled("id") ? "nullable" : "required") . "|image|mimes:png,jpg,jpeg,webp|max:2048",
+            ])->validate();
+
+            try {
+                DB::beginTransaction();
+
+                $data = [
+                    "label" => $request->label,
+                    "pl_link" => $request->pl_link,
+                    "bl_link" => $request->bl_link,
+                    "status" => (int) $request->status,
+                    "sort_order" => (int) $request->sort_order,
+                ];
+
+                if ($request->hasFile("logo")) {
+                    $file = $request->file("logo");
+                    $filename = "bank_" . time() . "_" . mt_rand(1000, 9999) . "." . strtolower($file->getClientOriginalExtension());
+                    $file->move(public_path("banks"), $filename);
+                    $data["logo"] = $filename;
+                }
+
+                if ($request->filled("id")) {
+                    DB::table("self_login_banks")->where("id", $request->id)->update($data);
+                    $action_msg = "Bank has been successfully updated.";
+                } else {
+                    DB::table("self_login_banks")->insert($data);
+                    $action_msg = "Bank has been successfully created.";
+                }
+
+                DB::commit();
+
+                return response()->json(["message" => $action_msg], 200);
+            } catch (\Exception $e) {
+                DB::rollBack();
+
+                return response()->json([
+                    "errors" => ["message" => ["The request was unsuccessful. - " . $e->getMessage()]]
+                ], 422);
+            }
+        }
+
+        return response()->json([
+            "errors" => ["message" => ["The request was unsuccessful."]]
+        ], 422);
+    }
+
+    public function selfLoginBanksEdit(string $id = null, Request $request)
+    {
+        $bank = DB::table("self_login_banks")->where("id", $request->uuid)->first();
+
+        if (!$bank) {
+            return response()->json([
+                "errors" => ["message" => ["Bank not found."]]
+            ], 422);
+        }
+
+        $bank->logo_url = $bank->logo ? asset("banks/" . $bank->logo) : "";
+
+        return response()->json(["data" => $bank], 200);
+    }
+}

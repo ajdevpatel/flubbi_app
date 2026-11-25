@@ -17,6 +17,7 @@ use App\Http\Controllers\Bend\EnquiriesController;
 use App\Http\Controllers\Bend\MarketingController;
 use App\Http\Controllers\Bend\ReportsController;
 use App\Http\Controllers\Bend\OurPartnersController;
+use App\Http\Controllers\Bend\SelfLoginBanksController;
 use App\Http\Controllers\Bend\SearchCustomersController;
 use App\Http\Controllers\Bend\SmsController;
 
@@ -157,6 +158,12 @@ Route::prefix(config("web.webapp.backend_slug"))->middleware(BendAuth::class)->g
     Route::controller(OurPartnersController::class)->group(function () {
         Route::match(["get", "post"], "/roi-packages", "roiPackagesIndex")->name("_roiPackagesIndex");
         Route::put("/roi-packages", "roiPackagesStore")->name("_roiPackagesStore");
+    });
+
+    Route::controller(SelfLoginBanksController::class)->group(function () {
+        Route::match(["get", "post"], "/self-login-banks", "selfLoginBanksIndex")->name("_selfLoginBanksIndex");
+        Route::put("/self-login-banks/store", "selfLoginBanksStore")->name("_selfLoginBanksStore");
+        Route::get("/self-login-banks/{key}", "selfLoginBanksEdit")->where("key", "[0-9]+")->name("_selfLoginBanksEdit");
     });
 });
 
