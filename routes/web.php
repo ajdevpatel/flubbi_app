@@ -58,6 +58,7 @@ Route::prefix(config("web.webapp.backend_slug"))->middleware(BendAuth::class)->g
         Route::match(["get", "post"], "/application", "postIndex")->name("_applicationIndex");
         Route::post("/application/remove-document", "removeDocumentPost")->name("_removeApplicationDocument");
         Route::get("/application/{key}", "viewPostIndex")->where("key", "[a-zA-Z0-9-]+")->name("_applicationView");
+        Route::post("/application/{key}/convert", "convertToCustomerPost")->where("key", "[a-zA-Z0-9-]+")->name("_applicationConvert");
         Route::post("/application/{key}", "addStatusPost")->where("key", "[a-zA-Z0-9-]+")->name("_applicationAddStatus");
 
         // Refactored loan routes

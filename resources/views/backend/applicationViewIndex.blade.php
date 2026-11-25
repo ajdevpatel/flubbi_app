@@ -17,6 +17,13 @@
                     <span class="ti-xs ti ti-square-plus me-2"></span>
                     <span class="d-none d-sm-inline-block"> Add Status </span>
                 </button>
+                @if (1 != (int) $data->payment_status)
+                    <button type="button" id="convertToCustomerBtn" class="btn btn-success waves-effect waves-light"
+                        data-url="{{ route('_applicationConvert', ['key' => $data->uuid]) }}">
+                        <span class="ti-xs ti ti-user-check me-2"></span>
+                        <span class="d-none d-sm-inline-block"> Convert to Customer </span>
+                    </button>
+                @endif
                 <a href="javascript:history.back()">
                     <button type="submit" class="btn btn-primary waves-effect waves-light">
                         <span class="ti-xs ti ti-chevrons-left me-2"></span>
@@ -504,6 +511,39 @@
         });
 
         
+        $(document).on("click", "#convertToCustomerBtn", function () {
+            var url = $(this).data("url");
+            if (!url) {
+                return;
+            }
+            if (!confirm("Convert this application to a customer and mark the payment as successful?")) {
+                return;
+            }
+            var $btn = $(this);
+            $btn.prop("disabled", true);
+            loadLoader("on");
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                dataType: "json",
+                success: function (xhr) {
+                    if (xhr.message) {
+                        Notify(xhr.message, "success");
+                    }
+                    setTimeout(function () {
+                        location.reload();
+                    }, 1500);
+                },
+                error: function (xhr) {
+                    $btn.prop("disabled", false);
+                    ajaxResponseFailure(xhr);
+                },
+            });
+        });
+
         function removeDocument(field, id) {
             if (confirm('Are you sure you want to remove this document?')) {
                 $.ajax({

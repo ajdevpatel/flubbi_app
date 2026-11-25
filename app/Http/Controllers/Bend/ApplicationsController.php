@@ -375,6 +375,102 @@ class ApplicationsController extends Controller
         ], 200);
     }
 
+    public function convertToCustomerPost(string $id = null, Request $request)
+    {
+        if (!$request->ajax() || "POST" != $request->method()) {
+            return response()->json([
+                "errors" => ["message" => ["something went wrong please try again"]]
+            ], 422);
+        }
+
+        Validator::make($request->all(), [
+            "uuid" => "required|exists:loan_applications,application_no",
+        ])->validate();
+
+        $application = DB::table("loan_applications")->where("application_no", $request->uuid)->first();
+
+        if (!$application) {
+            return response()->json([
+                "errors" => ["message" => ["Application not found."]]
+            ], 422);
+        }
+
+        if (1 == (int) $application->payment_status) {
+            return response()->json([
+                "errors" => ["message" => ["This application is already a paid customer."]]
+            ], 422);
+        }
+
+        $payment_id = "MANUAL-" . $application->application_no . "-" . time();
+        $now = $this->currentDataTime();
+
+        DB::transaction(function () use ($application, $payment_id, $now) {
+            $tz = DB::table("payment_transactions")->where("loan_application_id", $application->id)->first();
+
+            if ($tz) {
+                DB::table("payment_transactions")->where("id", $tz->id)->update([
+                    "status" => "success",
+                    "payment_gateway" => "manual",
+                    "gateway_payment_id" => $payment_id,
+                    "gateway_response" => json_encode(["manual" => "converted by admin"]),
+                    "updated_at" => $now,
+                ]);
+            } else {
+                $fee = $this->conversionFee((string) $application->login_type);
+                DB::table("payment_transactions")->insert([
+                    "user_id" => $application->user_id,
+                    "loan_application_id" => $application->id,
+                    "base_amount" => $fee["base_amount"],
+                    "gst_percentage" => $fee["gst_rate"],
+                    "gst_amount" => $fee["gst_amount"],
+                    "total_amount" => $fee["total_amount"],
+                    "payment_gateway" => "manual",
+                    "gateway_payment_id" => $payment_id,
+                    "gateway_transaction_id" => $payment_id,
+                    "gateway_response" => json_encode(["manual" => "converted by admin"]),
+                    "status" => "success",
+                    "created_at" => $now,
+                    "updated_at" => $now,
+                ]);
+            }
+
+            DB::table("loan_applications")->where("id", $application->id)->update([
+                "status" => 2,
+                "payment_status" => 1,
+                "step" => 8,
+                "is_converted" => 1,
+                "updated_at" => $now,
+            ]);
+
+            DB::table("application_history")->insert([
+                "application_id" => $application->id,
+                "remarks" => "Converted to customer - payment marked successful (manual)",
+                "status_id" => 2,
+                "created_at" => $now,
+            ]);
+        });
+
+        return response()->json([
+            "message" => "Application converted to customer. Payment marked as successful.",
+        ], 200);
+    }
+
+    private function conversionFee(string $login_type): array
+    {
+        $all = (array) config("web.fees.login_type", []);
+        $cfg = (array) ($all[$login_type] ?? ($all["self"] ?? []));
+        $gst_rate = (float) config("web.fees.gst_rate", 18);
+        $base = (float) ($cfg["base_amount"] ?? 0);
+        $gst = round($base * $gst_rate / 100, 2);
+
+        return [
+            "base_amount" => $base,
+            "gst_rate" => $gst_rate,
+            "gst_amount" => $gst,
+            "total_amount" => round($base + $gst, 2),
+        ];
+    }
+
     private function sendStatusWhatsapp(int $application_id, int $status_id, string $remarks): array
     {
         $event = config("web.whatsapp.status_events." . $status_id);
