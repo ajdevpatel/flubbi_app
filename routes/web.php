@@ -163,6 +163,7 @@ Route::prefix(config("web.webapp.backend_slug"))->middleware(BendAuth::class)->g
     Route::controller(SelfLoginBanksController::class)->group(function () {
         Route::match(["get", "post"], "/self-login-banks", "selfLoginBanksIndex")->name("_selfLoginBanksIndex");
         Route::put("/self-login-banks/store", "selfLoginBanksStore")->name("_selfLoginBanksStore");
+        Route::match(["get", "post"], "/bank-applications", "bankApplicationsIndex")->name("_bankApplicationsIndex");
         Route::get("/self-login-banks/{key}", "selfLoginBanksEdit")->where("key", "[0-9]+")->name("_selfLoginBanksEdit");
     });
 });
@@ -182,6 +183,7 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
         Route::get("/terms-and-conditions", "termsAndConditionsPost")->name("_termsAndConditionsPost");
         Route::get("/disclaimer", "disclaimerPost")->name("_disclaimerPost");
         Route::get("/faq", "faqPost")->name("_faqPost");
+        Route::get("/video-guides/{guide}", "videoGuideIndex")->where("guide", "[a-z-]+")->name("_videoGuideIndex");
         Route::match(["get", "post"], "/contact-us", "contactusPost")->middleware("throttle:20,1")->name("_contactusPost");
         Route::post("/add-lead", "loanLeadPost")->name("_loanLeadPost");
         Route::get("/emi-calculator", "emiCalculatorPostIndex")->name("_emiCalculatorIndex");
@@ -231,6 +233,7 @@ Route::middleware([FendAuth::class, MinifyHtml::class])->group(function () {
             Route::get("/dashboard", "dashboardIndex")->name("_userDashboard");
             Route::get("/applications", "applicationsIndex")->name("_userApplications");
             Route::get("/applications/{application}", "applicationShow")->where("application", "[A-Za-z0-9-]+")->name("_userApplicationShow");
+            Route::post("/applications/{application}/apply", "applicationBankApply")->where("application", "[A-Za-z0-9-]+")->name("_userApplicationBankApply");
             Route::any("/documents/{application?}", "documentsIndex")->where("application", "[A-Za-z0-9-]+")->name("_userDocuments");
             Route::any("/profile", "profileIndex")->name("_userProfile");
             Route::any("/support", "supportIndex")->name("_userSupport");

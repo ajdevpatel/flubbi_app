@@ -1261,8 +1261,12 @@ class LoanServiceController extends Controller
             ->orderBy("label", "asc")
             ->get();
 
+        $loan = $this->currentApplication($service["type"]);
+        $applied = $loan ? $this->appliedBankMap((int) $loan->id) : [];
+
         return $this->stepView($request, "banks", [
             "banks" => $banks,
+            "applied" => $applied,
         ]);
     }
 
@@ -1286,13 +1290,6 @@ class LoanServiceController extends Controller
             ], 422);
         }
 
-        if (!empty($loan->self_login_bank_id)) {
-            return response()->json([
-                "errors" => ["message" => ["You have already selected a lending partner."]],
-                "step" => $this->stepUrl($type, "success"),
-            ], 422);
-        }
-
         $validator = Validator::make($request->all(), [
             "bank_id" => ["required", "integer", "exists:self_login_banks,id,status,1"],
         ], [
@@ -1307,15 +1304,22 @@ class LoanServiceController extends Controller
         $bank = DB::table("self_login_banks")->where("id", (int) $request->input("bank_id"))->first();
         $link = trim((string) ("business" === $type ? $bank->bl_link : $bank->pl_link));
 
-        DB::table("loan_applications")->where("id", $loan->id)->update([
-            "self_login_bank_id" => $bank->id,
-            "updated_at" => now(),
-        ]);
+        $user = $this->sessionUser();
+        $applied = $this->recordBankApply((int) $loan->id, (int) $user->id, (int) $bank->id);
+
+        if (empty($loan->self_login_bank_id)) {
+            DB::table("loan_applications")->where("id", $loan->id)->update([
+                "self_login_bank_id" => $bank->id,
+                "updated_at" => now(),
+            ]);
+        }
 
         return response()->json([
-            "message" => ucwords($bank->label) . " selected. Opening their application page in a new tab.",
-            "step" => route("_userApplicationShow", $loan->application_no),
+            "message" => ucwords($bank->label) . " application page is opening in a new tab.",
+            "bank_id" => (int) $bank->id,
+            "apply_count" => (int) $applied["apply_count"],
             "open" => $link,
+            "account_url" => route("_userApplicationShow", $loan->application_no),
         ], 200);
     }
 

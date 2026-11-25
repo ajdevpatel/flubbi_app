@@ -471,6 +471,47 @@ abstract class Controller
 
 
     ##################################################################################
+    public function recordBankApply(int $loan_application_id, int $user_id, int $bank_id): array
+    {
+        $now = $this->currentDataTime();
+
+        $existing = DB::table("loan_bank_applications")
+            ->where("loan_application_id", $loan_application_id)
+            ->where("self_login_bank_id", $bank_id)
+            ->first();
+
+        if ($existing) {
+            $count = (int) $existing->apply_count + 1;
+            DB::table("loan_bank_applications")->where("id", $existing->id)->update([
+                "apply_count" => $count,
+                "last_applied_at" => $now,
+                "updated_at" => $now,
+            ]);
+        } else {
+            $count = 1;
+            DB::table("loan_bank_applications")->insert([
+                "loan_application_id" => $loan_application_id,
+                "self_login_bank_id" => $bank_id,
+                "user_id" => $user_id,
+                "apply_count" => 1,
+                "first_applied_at" => $now,
+                "last_applied_at" => $now,
+                "created_at" => $now,
+                "updated_at" => $now,
+            ]);
+        }
+
+        return ["bank_id" => $bank_id, "apply_count" => $count];
+    }
+
+    public function appliedBankMap(int $loan_application_id): array
+    {
+        return DB::table("loan_bank_applications")
+            ->where("loan_application_id", $loan_application_id)
+            ->pluck("apply_count", "self_login_bank_id")
+            ->toArray();
+    }
+
     public function fbConversionCURL($in)
     {
         if (app()->environment("local")) {

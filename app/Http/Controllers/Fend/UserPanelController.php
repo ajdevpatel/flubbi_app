@@ -349,6 +349,20 @@ class UserPanelController extends Controller
             $bank_link = $bank ? trim((string) (2 == $loan->loan_type_id ? $bank->bl_link : $bank->pl_link)) : "";
         }
 
+        $banks = collect();
+        $applied = [];
+        if ("self" === $loan->login_type && 1 == (int) $loan->payment_status) {
+            $link_col = 2 == (int) $loan->loan_type_id ? "bl_link" : "pl_link";
+            $banks = DB::table("self_login_banks")
+                ->select(["id", "label", "logo", $link_col . " as link"])
+                ->where("status", 1)
+                ->where($link_col, "!=", "")
+                ->orderBy("sort_order", "asc")
+                ->orderBy("label", "asc")
+                ->get();
+            $applied = $this->appliedBankMap((int) $loan->id);
+        }
+
         $history = DB::table("application_history as h")
             ->leftJoin("loan_status as ls", "ls.id", "=", "h.status_id")
             ->select(["h.*", "ls.label"])
@@ -362,10 +376,59 @@ class UserPanelController extends Controller
             "loan" => $loan,
             "detail" => $detail,
             "bank_link" => $bank_link,
+            "banks" => $banks,
+            "applied" => $applied,
             "history" => $history,
             "docs_allowed" => $docs_allowed,
             "docs" => $docs_allowed ? $this->documentStatus($loan) : [],
         ]);
+    }
+
+    public function applicationBankApply(Request $request, string $application)
+    {
+        [$user, $fail] = $this->requireUser($request);
+        if ($fail) {
+            return $fail;
+        }
+
+        $loan = $this->applications($user)->firstWhere("application_no", $application);
+        if (!$loan) {
+            return response()->json(["errors" => ["message" => ["Application not found."]]], 422);
+        }
+
+        if ("self" !== $loan->login_type || 1 != (int) $loan->payment_status) {
+            return response()->json(["errors" => ["message" => ["Please complete the platform fee payment first."]]], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            "bank_id" => ["required", "integer", "exists:self_login_banks,id,status,1"],
+        ], [
+            "bank_id.required" => "Please select a lending partner.",
+            "bank_id.exists" => "Please select a valid lending partner.",
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(["errors" => ["message" => [$validator->errors()->first()]]], 422);
+        }
+
+        $bank = DB::table("self_login_banks")->where("id", (int) $request->input("bank_id"))->first();
+        $link = trim((string) (2 == (int) $loan->loan_type_id ? $bank->bl_link : $bank->pl_link));
+
+        $applied = $this->recordBankApply((int) $loan->id, (int) $user->id, (int) $bank->id);
+
+        if (empty($loan->self_login_bank_id)) {
+            DB::table("loan_applications")->where("id", $loan->id)->update([
+                "self_login_bank_id" => $bank->id,
+                "updated_at" => now(),
+            ]);
+        }
+
+        return response()->json([
+            "message" => ucwords($bank->label) . " application page is opening in a new tab.",
+            "bank_id" => (int) $bank->id,
+            "apply_count" => (int) $applied["apply_count"],
+            "open" => $link,
+        ], 200);
     }
 
     public function documentsIndex(Request $request, string $application = "")

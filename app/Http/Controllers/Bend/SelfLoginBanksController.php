@@ -109,6 +109,73 @@ class SelfLoginBanksController extends Controller
         ], 422);
     }
 
+    public function bankApplicationsIndex(Request $request)
+    {
+        if ($request->ajax() && "POST" === $request->method()) {
+            $fdate = $request->filled("fdate") ? date("Y-m-d 00:00:00", strtotime($request->fdate)) : null;
+            $tdate = $request->filled("tdate") ? date("Y-m-d 23:59:59", strtotime($request->tdate)) : null;
+
+            $table_data = DB::table("loan_bank_applications as a")
+                ->leftJoin("self_login_banks as b", "b.id", "=", "a.self_login_bank_id")
+                ->leftJoin("loan_applications as la", "la.id", "=", "a.loan_application_id")
+                ->leftJoin("loan_types as lt", "lt.id", "=", "la.loan_type_id")
+                ->leftJoin("users as u", "u.id", "=", "a.user_id")
+                ->select([
+                    "a.id as p_id",
+                    "a.apply_count",
+                    "a.first_applied_at",
+                    "a.last_applied_at",
+                    "b.label as bank_label",
+                    "b.logo as bank_logo",
+                    "la.application_no as app_uuid",
+                    "lt.label as loan_type",
+                    "u.uuid as u_uuid",
+                    "u.name as u_name",
+                    "u.phone as u_phone",
+                    "u.email as u_email",
+                ])
+                ->when($fdate, fn ($x) => $x->where("a.last_applied_at", ">=", $fdate))
+                ->when($tdate, fn ($x) => $x->where("a.last_applied_at", "<=", $tdate))
+                ->orderByDesc("a.last_applied_at")
+                ->get();
+
+            return DataTables::of($table_data)
+                ->addIndexColumn()
+                ->addColumn("customer", function ($row) {
+                    return "<b>" . e(ucwords((string) $row->u_name)) . "</b><br><small>" . e($row->u_phone) . "<br>" . e($row->u_email) . "</small>";
+                })
+                ->addColumn("application", function ($row) {
+                    return "<b>" . e($row->app_uuid) . "</b><br><small class='text-muted'>" . e($row->loan_type) . "</small>";
+                })
+                ->addColumn("bank", function ($row) {
+                    $img = $row->bank_logo ? '<img src="' . asset("banks/" . $row->bank_logo) . '" width="40" class="img-thumbnail me-1">' : "";
+                    return $img . "<b>" . e(ucwords((string) $row->bank_label)) . "</b>";
+                })
+                ->addColumn("apply_count", function ($row) {
+                    return '<span class="badge bg-label-primary">' . (int) $row->apply_count . ' time(s)</span>';
+                })
+                ->addColumn("applied", function ($row) {
+                    $first = $row->first_applied_at ? date("d M Y, h:i A", strtotime($row->first_applied_at)) : "-";
+                    $last = $row->last_applied_at ? date("d M Y, h:i A", strtotime($row->last_applied_at)) : "-";
+                    return "<small><b>First :</b> " . $first . "<br><b>Last :</b> " . $last . "</small>";
+                })
+                ->addColumn("action", function ($row) {
+                    $url = [];
+                    if (!empty($row->app_uuid)) {
+                        $url["application"] = route("_applicationView", ["key" => $row->app_uuid]);
+                    }
+                    if (!empty($row->u_uuid)) {
+                        $url["user"] = route("_customersEdit", ["key" => $row->u_uuid]);
+                    }
+                    return $this->getTableActionHtml($url);
+                })
+                ->rawColumns(["customer", "application", "bank", "apply_count", "applied", "action"])
+                ->make(true);
+        }
+
+        return view("backend.bankApplicationsIndex");
+    }
+
     public function selfLoginBanksEdit(string $id = null, Request $request)
     {
         $bank = DB::table("self_login_banks")->where("id", $request->uuid)->first();

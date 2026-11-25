@@ -53,21 +53,24 @@
 
     @if ('self' === $loan->login_type && 1 == (int) $loan->payment_status)
         <div class="up-card">
-            <div class="up-card__title"><h4>Lending partner</h4></div>
-            @if ($loan->bank_name)
-                <div class="up-bank">
-                    <img src="{{ asset('banks/' . $loan->bank_logo) }}" alt="{{ $loan->bank_name }}">
-                    <div>
-                        <small>You selected</small>
-                        <strong>{{ ucwords($loan->bank_name) }}</strong>
-                    </div>
-                    @if ($bank_link)
-                        <a class="fl-btn fl-btn--sm" href="{{ $bank_link }}" target="_blank" rel="noopener">Open application <i class="bi bi-box-arrow-up-right"></i></a>
-                    @endif
+            <div class="up-card__title"><h4>Lending partners</h4></div>
+            <p style="font-size:14px;color:var(--fl-muted);margin-bottom:10px;">Apply to as many lenders as you like &mdash; tap a bank to open its application page. You can apply to more anytime.</p>
+            @if (count($banks))
+                <div class="fl-bank-grid" id="up-bank-grid"
+                    data-url="{{ route('_userApplicationBankApply', $loan->application_no) }}">
+                    @foreach ($banks as $bank)
+                        @php $count = (int) ($applied[$bank->id] ?? 0); @endphp
+                        <button type="button" class="fl-bank fl-bank--apply @if ($count > 0) is-applied @endif"
+                            data-id="{{ $bank->id }}" data-link="{{ trim($bank->link) }}" title="{{ $bank->label }}">
+                            <span class="fl-bank__badge" @if ($count < 1) hidden @endif>Applied<span class="fl-bank__count">@if ($count > 1) ({{ $count }}) @endif</span></span>
+                            <span class="fl-bank__logo"><img src="{{ asset('banks/' . $bank->logo) }}" alt="{{ $bank->label }}" loading="lazy"></span>
+                            <span class="fl-bank__name">{{ ucwords($bank->label) }}</span>
+                            <span class="fl-bank__apply"><i class="bi bi-box-arrow-up-right"></i> Apply</span>
+                        </button>
+                    @endforeach
                 </div>
             @else
-                <div class="up-note"><i class="bi bi-bank"></i><div>Payment received. Pick your lending partner to continue.
-                    <a class="fl-link" href="{{ route(1 == $loan->loan_type_id ? '_personalServiceStart' : '_businessServiceStart') }}">Choose bank</a></div></div>
+                <div class="up-note"><i class="bi bi-bank"></i><div>No lending partners are available right now. Please check back soon.</div></div>
             @endif
         </div>
     @elseif ('consultant' === $loan->login_type && 1 == (int) $loan->payment_status)
@@ -121,4 +124,61 @@
         </div>
         --}}
     </div>
+@endsection
+
+@section('panelJs')
+    <script>
+        (function () {
+            var $grid = $("#up-bank-grid");
+            if (!$grid.length) {
+                return;
+            }
+            var url = $grid.data("url"), token = '{{ csrf_token() }}', busy = false;
+
+            $grid.on("click", ".fl-bank--apply", function () {
+                if (busy) {
+                    return false;
+                }
+                var $b = $(this);
+                busy = true;
+                $b.addClass("is-loading");
+                var tab = window.open("", "_blank");
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    data: { _token: token, bank_id: $b.data("id") },
+                    dataType: "json",
+                    success: function (res) {
+                        busy = false;
+                        $b.removeClass("is-loading");
+                        if (res.open && tab) {
+                            tab.location.href = res.open;
+                        } else if (tab) {
+                            tab.close();
+                        }
+                        $b.addClass("is-applied");
+                        $b.find(".fl-bank__badge").prop("hidden", false);
+                        if (res.apply_count && res.apply_count > 1) {
+                            $b.find(".fl-bank__count").text(" (" + res.apply_count + ")");
+                        }
+                        if (res.message && typeof Notify === "function") {
+                            Notify(res.message, "success");
+                        }
+                    },
+                    error: function (xhr) {
+                        busy = false;
+                        $b.removeClass("is-loading");
+                        if (tab) {
+                            tab.close();
+                        }
+                        if (typeof ajaxResponseFailure === "function") {
+                            ajaxResponseFailure(xhr);
+                        }
+                    }
+                });
+                return false;
+            });
+        })();
+    </script>
 @endsection

@@ -161,6 +161,13 @@
                                     <li><a href="{{ route('_businessServiceIndex') }}">Business Loan</a></li>
                                 </ul>
                             </li>
+                            <li><a href="#">Video Guides <span><i class="fas fa-angle-down"></i></span></a>
+                                <ul class="sub_menu">
+                                    @foreach (config('web.guides', []) as $guide_menu_slug => $guide_menu)
+                                        <li><a href="{{ route('_videoGuideIndex', $guide_menu_slug) }}">{{ $guide_menu['label'] }}</a></li>
+                                    @endforeach
+                                </ul>
+                            </li>
                             <li><a href="{{ route('_contactusPost') }}">Contact</a></li>
                         </ul>
 
@@ -200,6 +207,13 @@
                         <ul class="sub_menu">
                             <li><a href="{{ route('_personalServiceIndex') }}">Personal Loan</a></li>
                             <li><a href="{{ route('_businessServiceIndex') }}">Business Loan</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#">Video Guides</a>
+                        <ul class="sub_menu">
+                            @foreach (config('web.guides', []) as $guide_menu_slug => $guide_menu)
+                                <li><a href="{{ route('_videoGuideIndex', $guide_menu_slug) }}">{{ $guide_menu['label'] }}</a></li>
+                            @endforeach
                         </ul>
                     </li>
                     <li><a href="{{ route('_contactusPost') }}">Contact</a></li>

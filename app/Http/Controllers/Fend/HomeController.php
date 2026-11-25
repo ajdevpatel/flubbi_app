@@ -193,6 +193,29 @@ class HomeController extends Controller
         return view("frontend.faqPost");
     }
 
+    public function videoGuideIndex(string $guide)
+    {
+        $guides = config("web.guides", []);
+        if (!isset($guides[$guide])) {
+            abort(404);
+        }
+
+        $video_url = (string) DB::table("options")->where("key", $guides[$guide]["video_key"])->value("value");
+
+        $video_id = "";
+        if (preg_match('~(?:youtu\.be/|[?&]v=|/embed/|/shorts/|/live/)([A-Za-z0-9_-]{11})~', $video_url, $match)) {
+            $video_id = $match[1];
+        }
+
+        return view("frontend.videoGuideIndex", [
+            "guides" => $guides,
+            "guide_slug" => $guide,
+            "guide" => $guides[$guide],
+            "video_id" => $video_id,
+            "video_vertical" => "" !== $video_id && str_contains($video_url, "/shorts/"),
+        ]);
+    }
+
     public function aboutusPost(Request $request)
     {
         return view("frontend.aboutusIndex");
