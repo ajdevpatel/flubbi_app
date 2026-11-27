@@ -6,6 +6,11 @@
 @endsection
 
 @section('bodyIndex')
+    @php
+        $apply_personal = route('_personalServiceStart', ['login_type' => $guide['login_type']]);
+        $apply_business = route('_businessServiceStart', ['login_type' => $guide['login_type']]);
+    @endphp
+
     <div class="breadcumb-area fl-breadcumb d-flex">
         <div class="container">
             <div class="row align-items-center">
@@ -65,10 +70,10 @@
                     </ul>
 
                     <div class="fl-actions">
-                        <a class="fl-btn" href="{{ route('_personalServiceIndex') }}">
+                        <a class="fl-btn" href="{{ $apply_personal }}">
                             Apply for Personal Loan <i class="bi bi-arrow-right"></i>
                         </a>
-                        <a class="fl-btn fl-btn--ghost" href="{{ route('_businessServiceIndex') }}">
+                        <a class="fl-btn fl-btn--ghost" href="{{ $apply_business }}">
                             Apply for Business Loan <i class="bi bi-arrow-right"></i>
                         </a>
                     </div>
@@ -102,10 +107,10 @@
 
             <div class="fl-guide__foot">
                 <div class="fl-actions">
-                    <a class="fl-btn" href="{{ route('_personalServiceIndex') }}">
+                    <a class="fl-btn" href="{{ $apply_personal }}">
                         Apply for Personal Loan <i class="bi bi-arrow-right"></i>
                     </a>
-                    <a class="fl-btn fl-btn--ghost" href="{{ route('_businessServiceIndex') }}">
+                    <a class="fl-btn fl-btn--ghost" href="{{ $apply_business }}">
                         Apply for Business Loan <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>

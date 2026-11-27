@@ -14,6 +14,7 @@ return [
         "title" => "Apply on your own with Self Login",
         "intro" => "Watch how to check your eligibility, pay the one time platform fee and apply directly on the lending partner's website.",
         "video_key" => "self_video",
+        "login_type" => "self",
         "steps" => array_merge($common_steps, [
             ["Choose Self Login", "On the \"How would you like to proceed?\" step, select Self Login."],
             ["Pay the platform fee", "Pay the one time platform fee online. The lending partner list unlocks right after payment."],
@@ -31,6 +32,7 @@ return [
         "title" => "Let a Flubbi agent handle it with Hire Agent",
         "intro" => "Watch how to check your eligibility, pay the one time service fee and hand your application over to a dedicated Flubbi agent.",
         "video_key" => "consultant_video",
+        "login_type" => "consultant",
         "steps" => array_merge($common_steps, [
             ["Choose Hire Agent", "On the \"How would you like to proceed?\" step, select Hire Agent."],
             ["Pay the service fee", "Pay the one time service fee online to confirm your application."],
